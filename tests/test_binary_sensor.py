@@ -249,3 +249,52 @@ async def test_binary_sensor_none_checks(hass: HomeAssistant, hass_client) -> No
     # Verify entities exist and didn't crash
     state = hass.states.get("binary_sensor.wican_test_ble_status")
     assert state is not None
+
+
+def test_match_can_payload_logic() -> None:
+    """Test match_can_payload matching function."""
+    from custom_components.wican.binary_sensor import match_can_payload
+
+    # Exact byte & wildcard
+    assert match_can_payload("0002002000000000", "* * 00 * * * * *") is True
+    assert match_can_payload("0002082000000000", "* * 00 * * * * *") is False
+
+    # Negation
+    assert match_can_payload("0000000000000000", "!12 * * * * * * *") is True
+    assert match_can_payload("1200000000000000", "!12 * * * * * * *") is False
+
+
+async def test_can_condition_binary_sensor_entity(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test CAN condition binary sensor updates state from matching CAN payload."""
+    from custom_components.wican.binary_sensor import WiCANCanConditionBinarySensorEntity
+
+    mock_config_entry.add_to_hass(hass)
+    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = mock_config_entry.runtime_data.coordinator
+
+    cond_def = {
+        "id": "gear_park",
+        "name": "Gear in Park",
+        "type": "can_state",
+        "can_id": "0x2C0",
+        "match_payload": "* * 00 * * * * *",
+    }
+    entity = WiCANCanConditionBinarySensorEntity(mock_config_entry, cond_def)
+    entity.hass = hass
+    entity.entity_id = "binary_sensor.wican_device_cando_gear_park"
+
+    # Simulate state update matching
+    coordinator.handle_webhook_data({"can_states": {"0x2C0": {"data": "0002002000000000"}}})
+    entity._handle_coordinator_update()
+    assert entity.is_on is True
+
+    # Simulate non-matching state update
+    coordinator.handle_webhook_data({"can_states": {"0x2C0": {"data": "0002082000000000"}}})
+    entity._handle_coordinator_update()
+    assert entity.is_on is False

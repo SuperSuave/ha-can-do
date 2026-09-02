@@ -26,7 +26,10 @@ if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
     from homeassistant.data_entry_flow import FlowResult
-    from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+    try:
+        from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+    except ImportError:
+        from homeassistant.components.zeroconf import ZeroconfServiceInfo
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -11,6 +11,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity import EntityCategory
 
 from .attributes import SENSOR_DESCRIPTIONS, WiCANSensorEntityDescription, get_sensor_attributes
 from .const import DOMAIN
@@ -151,6 +152,11 @@ async def async_setup_entry(  # noqa: C901
         WiCANSensorEntity(config_entry, description)
         for description in SENSOR_DESCRIPTIONS
     )
+
+    async_add_entities([
+        WiCANCanStatesSensorEntity(config_entry),
+        WiCANCanCatalogSensorEntity(config_entry),
+    ])
 
     DYNAMIC_PID_SENSORS[config_entry.entry_id] = {}
 
@@ -342,4 +348,86 @@ class WiCANPidSensorEntity(WiCANEntity, RestoreSensor):
             self._attr_native_value = self._pending_value
             self.async_write_ha_state()
             self._pending_value = None
+        await super().async_added_to_hass()
+
+
+
+class WiCANCanStatesSensorEntity(WiCANEntity, RestoreSensor):
+    @callback
+    def _async_handle_event(self, webhook_id: str, data: dict[str, str]) -> None:
+        pass
+
+    """Sensor for monitoring CAN ID message states."""
+
+    __slots__ = ("_attr_extra_state_attributes", "_attr_native_value")
+
+    def __init__(self, config_entry: WiCANConfigEntry) -> None:
+        description = WiCANSensorEntityDescription(
+            key="can_states",
+            name="CAN States",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            icon="mdi:bus-clock",
+        )
+        super().__init__(config_entry, description)
+        self._attr_unique_id = f"{config_entry.entry_id}_can_states"
+        self._attr_native_value = 0
+        self._attr_extra_state_attributes = {}
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from coordinator."""
+        can_states = self.coordinator.data.get("can_states")
+        if isinstance(can_states, dict):
+            self._attr_native_value = len(can_states)
+            self._attr_extra_state_attributes = {"messages": can_states}
+            self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        """Restore entity state."""
+        state = await self.async_get_last_sensor_data()
+        if state and state.native_value is not None:
+            try:
+                self._attr_native_value = int(state.native_value)
+            except (ValueError, TypeError):
+                self._attr_native_value = 0
+        await super().async_added_to_hass()
+
+
+class WiCANCanCatalogSensorEntity(WiCANEntity, RestoreSensor):
+    @callback
+    def _async_handle_event(self, webhook_id: str, data: dict[str, str]) -> None:
+        pass
+
+    """Sensor for monitoring CAN Do catalog entries."""
+
+    __slots__ = ("_attr_extra_state_attributes", "_attr_native_value")
+
+    def __init__(self, config_entry: WiCANConfigEntry) -> None:
+        description = WiCANSensorEntityDescription(
+            key="cando_catalog",
+            name="CAN Catalog",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            icon="mdi:book-open-variant",
+        )
+        super().__init__(config_entry, description)
+        self._attr_unique_id = f"{config_entry.entry_id}_cando_catalog"
+        self._attr_native_value = 0
+        self._attr_extra_state_attributes = {}
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from coordinator."""
+        catalog = self.coordinator.data.get("cando_catalog")
+        if isinstance(catalog, (dict, list)):
+            length = len(catalog.get("entries", catalog)) if isinstance(catalog, dict) else len(catalog)
+            self._attr_native_value = length
+            self._attr_extra_state_attributes = {"catalog": catalog}
+            self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        """Restore entity state."""
+        state = await self.async_get_last_sensor_data()
+        if state and state.native_value is not None:
+            try:
+                self._attr_native_value = int(state.native_value)
+            except (ValueError, TypeError):
+                self._attr_native_value = 0
         await super().async_added_to_hass()
