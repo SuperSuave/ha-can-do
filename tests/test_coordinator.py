@@ -372,3 +372,21 @@ async def test_coordinator_numeric_string_conversion_edge_cases(
 
 
 
+
+
+async def test_coordinator_fetch_can_states_and_catalog(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+
+) -> None:
+    """Test coordinator fetching CAN states and catalog."""
+    coordinator = WiCANDataUpdateCoordinator(hass, mock_config_entry)
+    await coordinator.async_config_entry_first_refresh()
+
+    mock_states = {"0x2C0": {"data": "0002002000000000", "dlc": 8, "bus": 0, "age_ms": 5}}
+    mock_catalog = [{"id": "cond_gear_park", "type": "can_state", "can_id": "0x2C0", "match_payload": "* * 00 * * * * *"}]
+
+    with patch.object(coordinator, "async_fetch_can_states", return_value=mock_states),          patch.object(coordinator, "async_fetch_cando_catalog", return_value=mock_catalog):
+        data = await coordinator._async_update_data()
+        assert data.get("can_states") == mock_states
+        assert data.get("cando_catalog") == mock_catalog

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.exceptions import ConfigEntryError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from yarl import URL
 
 from .const import DOMAIN, WICAN_DATA_UPDATE_INTERVAL
 
@@ -46,13 +49,77 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from WiCAN device.
 
-        This is a push-based integration, so we don't actively poll.
-        This method exists for health checks and fallback scenarios.
-        The real updates come through handle_webhook_data().
+        This is a push-based integration, but we also poll /api/can_states
+        and /load_cando_catalog when available.
         """
-        # For push-based integrations, we just return the current data
-        # The webhook handler will call async_set_updated_data() when new data arrives
+        can_states = await self.async_fetch_can_states()
+        if can_states is not None:
+            self._data["can_states"] = can_states
+
+        catalog = await self.async_fetch_cando_catalog()
+        if catalog is not None:
+            self._data["cando_catalog"] = catalog
+
         return self._data
+
+    def _get_device_base_url(self) -> str | None:
+        """Get base URL for device API calls."""
+        if hasattr(self.config_entry, "runtime_data") and self.config_entry.runtime_data:
+            host = (
+                self.config_entry.runtime_data.device_host
+                or self.config_entry.runtime_data.device_ip
+            )
+            if host:
+                return host if host.startswith(("http://", "https://")) else f"http://{host}"
+
+        host = (
+            self.config_entry.data.get("host")
+            or self.config_entry.data.get("ip")
+            or self.config_entry.data.get("mdns")
+        )
+        if host:
+            return host if host.startswith(("http://", "https://")) else f"http://{host}"
+
+        return None
+
+    async def async_fetch_can_states(self) -> dict[str, Any] | None:
+        """Fetch CAN ID message states from /api/can_states endpoint."""
+        base_url = self._get_device_base_url()
+        if not base_url:
+            return None
+
+        try:
+            url = str(URL(base_url).with_path("/api/can_states"))
+            session = async_get_clientsession(self.hass)
+            async with asyncio.timeout(10):
+                response = await session.get(url)
+                if response.status == 200:
+                    data = await response.json()
+                    if isinstance(data, dict):
+                        return data
+        except Exception as err:
+            _LOGGER.debug("Failed to fetch CAN states from %s: %s", base_url, err)
+
+        return None
+
+    async def async_fetch_cando_catalog(self) -> dict[str, Any] | list[Any] | None:
+        """Fetch CAN Do catalog from /load_cando_catalog endpoint."""
+        base_url = self._get_device_base_url()
+        if not base_url:
+            return None
+
+        try:
+            url = str(URL(base_url).with_path("/load_cando_catalog"))
+            session = async_get_clientsession(self.hass)
+            async with asyncio.timeout(10):
+                response = await session.get(url)
+                if response.status == 200:
+                    data = await response.json()
+                    return data
+        except Exception as err:
+            _LOGGER.debug("Failed to fetch CAN Do catalog from %s: %s", base_url, err)
+
+        return None
 
     async def async_config_entry_first_refresh(self) -> None:
         """Perform first refresh of the coordinator.

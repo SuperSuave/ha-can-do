@@ -36,10 +36,20 @@ async def async_setup_entry(
 ) -> None:
     """Set up the binary sensor platform."""
 
-    async_add_entities(
+    entities: list[BinarySensorEntity] = [
         WiCANBinarySensorEntity(config_entry, description)
         for description in BINARY_SENSOR_DESCRIPTIONS
-    )
+    ]
+
+    catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
+    if catalog:
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
+        if isinstance(entries, list):
+            for item in entries:
+                if isinstance(item, dict) and item.get("type") == "can_state":
+                    entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
+
+    async_add_entities(entities)
 
 class WiCANBinarySensorEntity(WiCANEntity, BinarySensorEntity, RestoreEntity):
     """A binary sensor entity."""
@@ -79,5 +89,77 @@ class WiCANBinarySensorEntity(WiCANEntity, BinarySensorEntity, RestoreEntity):
         # Restore last known state so logbook has a baseline before first push
         last_state = await self.async_get_last_state()
         if last_state is not None and self._attr_is_on is None:
+            self._attr_is_on = last_state.state == "on"
+        await super().async_added_to_hass()
+
+def match_can_payload(raw_hex: str, pattern: str) -> bool:
+    """Check if raw hex string matches pattern (e.g. '* * 00 * * * * *' or '!12 *')."""
+    if not raw_hex or not pattern:
+        return False
+
+    raw_clean = raw_hex.replace(" ", "").upper()
+    bytes_raw = [raw_clean[i:i + 2] for i in range(0, len(raw_clean), 2)]
+    pattern_parts = pattern.strip().split()
+
+    if len(pattern_parts) > len(bytes_raw):
+        return False
+
+    for p, r in zip(pattern_parts, bytes_raw):
+        p = p.upper()
+        if p == "*":
+            continue
+        if p.startswith("!"):
+            if r == p[1:]:
+                return False
+        elif p != r:
+            return False
+
+    return True
+
+
+class WiCANCanConditionBinarySensorEntity(WiCANEntity, BinarySensorEntity, RestoreEntity):
+    @callback
+    def _async_handle_event(self, webhook_id: str, data: dict[str, str]) -> None:
+        pass
+
+    """Binary sensor for CAN Do catalog conditions based on CAN state matching."""
+
+    __slots__ = ("_attr_extra_state_attributes", "_attr_is_on", "_condition_def")
+
+    def __init__(self, config_entry: WiCANConfigEntry, condition_def: dict) -> None:
+        cond_id = condition_def.get("id", "unknown")
+        cond_name = condition_def.get("name", cond_id)
+        description = WiCANBinarySensorEntityDescription(
+            key=f"cando_{cond_id}",
+            name=f"CAN Condition: {cond_name}",
+            icon="mdi:car-cog",
+        )
+        super().__init__(config_entry, description)
+        self._condition_def = condition_def
+        self._attr_unique_id = f"{config_entry.entry_id}_cando_cond_{cond_id}"
+        self._attr_is_on = False
+        self._attr_extra_state_attributes = {"condition_id": cond_id, "definition": condition_def}
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from coordinator."""
+        can_states = self.coordinator.data.get("can_states", {})
+        target_can_id = self._condition_def.get("can_id")
+        match_payload = self._condition_def.get("match_payload")
+
+        if target_can_id and match_payload and isinstance(can_states, dict):
+            matched = False
+            for can_id_key, state in can_states.items():
+                if str(can_id_key).upper() == str(target_can_id).upper():
+                    data_hex = state.get("data", "") if isinstance(state, dict) else str(state)
+                    if match_can_payload(data_hex, match_payload):
+                        matched = True
+                        break
+            self._attr_is_on = matched
+            self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        """Restore entity state."""
+        last_state = await self.async_get_last_state()
+        if last_state is not None:
             self._attr_is_on = last_state.state == "on"
         await super().async_added_to_hass()

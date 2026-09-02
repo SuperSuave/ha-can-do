@@ -9,7 +9,10 @@ import pytest
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+try:
+    from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+except ImportError:
+    from homeassistant.components.zeroconf import ZeroconfServiceInfo
 from homeassistant.const import CONF_NAME, CONF_WEBHOOK_ID
 
 from custom_components.wican.const import DOMAIN

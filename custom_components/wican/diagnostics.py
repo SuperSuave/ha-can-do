@@ -62,6 +62,14 @@ async def async_get_config_entry_diagnostics(
             else None,
             "data_keys": list(coordinator.data.keys()) if coordinator.data else [],
         },
+        "can_info": {
+            "can_states_count": len(coordinator.data.get("can_states", {})) if isinstance(coordinator.data.get("can_states"), dict) else 0,
+            "cando_catalog_count": (
+                len(coordinator.data.get("cando_catalog", {}).get("entries", coordinator.data.get("cando_catalog", {})))
+                if isinstance(coordinator.data.get("cando_catalog"), dict)
+                else (len(coordinator.data.get("cando_catalog")) if isinstance(coordinator.data.get("cando_catalog"), list) else 0)
+            ) if coordinator.data else 0,
+        },
         "entities": wican_entities,
         "entity_count": len(wican_entities),
     }

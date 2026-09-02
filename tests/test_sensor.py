@@ -299,3 +299,31 @@ async def test_sensor_state_restoration_with_normalization(hass: HomeAssistant) 
 
 
 
+
+
+async def test_can_states_and_catalog_sensors(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test CAN states and catalog diagnostic sensors."""
+    mock_config_entry.add_to_hass(hass)
+    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = mock_config_entry.runtime_data.coordinator
+    can_states_data = {"0x2C0": {"data": "0002002000000000", "dlc": 8, "bus": 0, "age_ms": 10}}
+    catalog_data = [{"id": "cond_gear_park", "name": "Park", "type": "can_state", "can_id": "0x2C0", "match_payload": "* * 00 * * * * *"}]
+
+    coordinator.handle_webhook_data({"can_states": can_states_data, "cando_catalog": catalog_data})
+    await hass.async_block_till_done()
+
+    can_states_sensor = hass.states.get("sensor.wican_device_can_states")
+    assert can_states_sensor is not None
+    assert can_states_sensor.state == "1"
+    assert can_states_sensor.attributes.get("messages") == can_states_data
+
+    catalog_sensor = hass.states.get("sensor.wican_device_cando_catalog")
+    assert catalog_sensor is not None
+    assert catalog_sensor.state == "1"
+    assert catalog_sensor.attributes.get("catalog") == catalog_data
