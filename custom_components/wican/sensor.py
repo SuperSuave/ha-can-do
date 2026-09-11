@@ -16,6 +16,7 @@ from homeassistant.helpers.entity import EntityCategory
 from .attributes import SENSOR_DESCRIPTIONS, WiCANSensorEntityDescription, get_sensor_attributes
 from .const import DOMAIN
 from .entity import WiCANEntity
+from .helpers import format_friendly_name
 from .param_loader import (
     get_param_device_class,
     get_param_icon,
@@ -178,7 +179,7 @@ async def async_setup_entry(  # noqa: C901
 
         entity_description = WiCANSensorEntityDescription(
             key=pid_key,
-            name=pid_key,
+            name=format_friendly_name(pid_key),
             device_class=device_class,
             native_unit_of_measurement=unit,
             state_class="measurement",
@@ -214,7 +215,7 @@ async def async_setup_entry(  # noqa: C901
 
                 entity_description = WiCANSensorEntityDescription(
                     key=pid_key,
-                    name=pid_key,
+                    name=format_friendly_name(pid_key),
                     device_class=device_class,
                     native_unit_of_measurement=unit,
                     icon=icon,

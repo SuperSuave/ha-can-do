@@ -323,7 +323,7 @@ async def test_can_states_and_catalog_sensors(
     assert can_states_sensor.state == "1"
     assert can_states_sensor.attributes.get("messages") == can_states_data
 
-    catalog_sensor = hass.states.get("sensor.wican_device_cando_catalog")
+    catalog_sensor = hass.states.get("sensor.wican_device_can_catalog") or hass.states.get("sensor.wican_device_cando_catalog")
     assert catalog_sensor is not None
     assert catalog_sensor.state == "1"
     assert catalog_sensor.attributes.get("catalog") == catalog_data

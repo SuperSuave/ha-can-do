@@ -48,6 +48,13 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.DEVICE_TRACKER,
     Platform.UPDATE,
+    Platform.CLIMATE,
+    Platform.LOCK,
+    Platform.COVER,
+    Platform.LIGHT,
+    Platform.BUTTON,
+    Platform.SWITCH,
+    Platform.SELECT,
 ]
 
 # Type alias for config entry with runtime data

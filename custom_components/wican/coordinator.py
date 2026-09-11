@@ -245,3 +245,48 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def get_sensor_value(self, sensor_key: str) -> Any | None:
         """Get value for a specific sensor."""
         return self._data.get(sensor_key)
+
+    async def async_execute_action(self, action_payload: dict[str, Any]) -> bool:
+        """Send an action execution request to the WiCAN device (/test_can_do_action)."""
+        base_url = self._get_device_base_url()
+        if not base_url:
+            _LOGGER.warning("Cannot execute action: base_url not resolved")
+            return False
+
+        try:
+            url = str(URL(base_url).with_path("/test_can_do_action"))
+            session = async_get_clientsession(self.hass)
+            async with asyncio.timeout(10):
+                response = await session.post(url, json=action_payload)
+                if response.status in (200, 201, 204):
+                    _LOGGER.info("Successfully executed CAN action on WiCAN device")
+                    return True
+                _LOGGER.warning("CAN action failed with status %s", response.status)
+        except Exception as err:
+            _LOGGER.exception("Failed to execute CAN action on WiCAN device: %s", err)
+
+        return False
+
+    async def async_trigger_precondition(self, state: bool | None = None) -> bool:
+        """Send a precondition toggle command to the WiCAN device (/precondition_toggle)."""
+        base_url = self._get_device_base_url()
+        if not base_url:
+            _LOGGER.warning("Cannot toggle precondition: base_url not resolved")
+            return False
+
+        try:
+            url = str(URL(base_url).with_path("/precondition_toggle"))
+            session = async_get_clientsession(self.hass)
+            payload = {}
+            if state is not None:
+                payload["state"] = "on" if state else "off"
+            async with asyncio.timeout(10):
+                response = await session.post(url, json=payload)
+                if response.status in (200, 201, 204):
+                    _LOGGER.info("Successfully toggled precondition on WiCAN device")
+                    return True
+                _LOGGER.warning("Precondition toggle failed with status %s", response.status)
+        except Exception as err:
+            _LOGGER.exception("Failed to toggle precondition on WiCAN device: %s", err)
+
+        return False

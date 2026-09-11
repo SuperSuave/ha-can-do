@@ -9,9 +9,11 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .attributes import BINARY_SENSOR_DESCRIPTIONS, WiCANBinarySensorEntityDescription, get_sensor_attributes
+from .const import DOMAIN
 from .entity import WiCANEntity
 
 if TYPE_CHECKING:
@@ -41,15 +43,45 @@ async def async_setup_entry(
         for description in BINARY_SENSOR_DESCRIPTIONS
     ]
 
+    created_cond_ids: set[str] = set()
+
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
     if catalog:
         entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
         if isinstance(entries, list):
             for item in entries:
-                if isinstance(item, dict) and item.get("type") == "can_state":
-                    entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
+                if isinstance(item, dict) and ("condition" in item.get("roles", ["condition"]) or item.get("type") in ("can_state", "voltage", "speed_zero", "param_range")):
+                    cond_id = item.get("id")
+                    if cond_id and cond_id not in created_cond_ids:
+                        created_cond_ids.add(cond_id)
+                        entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
 
     async_add_entities(entities)
+
+    @callback
+    def handle_catalog_update(webhook_id, data):
+        if webhook_id != config_entry.runtime_data.webhook_id:
+            return
+        cat = data.get("cando_catalog")
+        if not cat:
+            return
+        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
+        if not isinstance(cat_entries, list):
+            return
+
+        new_entities = []
+        for item in cat_entries:
+            if isinstance(item, dict) and ("condition" in item.get("roles", ["condition"]) or item.get("type") in ("can_state", "voltage", "speed_zero", "param_range")):
+                cond_id = item.get("id")
+                if cond_id and cond_id not in created_cond_ids:
+                    created_cond_ids.add(cond_id)
+                    new_entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
+
+        if new_entities:
+            async_add_entities(new_entities)
+
+    unsub = async_dispatcher_connect(_hass, DOMAIN, handle_catalog_update)
+    config_entry.async_on_unload(unsub)
 
 class WiCANBinarySensorEntity(WiCANEntity, BinarySensorEntity, RestoreEntity):
     """A binary sensor entity."""
@@ -142,7 +174,35 @@ class WiCANCanConditionBinarySensorEntity(WiCANEntity, BinarySensorEntity, Resto
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from coordinator."""
+        cond_type = self._condition_def.get("type")
+        status = self.coordinator.data.get("status", {})
         can_states = self.coordinator.data.get("can_states", {})
+
+        if cond_type == "voltage":
+            # Check battery voltage against condition
+            target_v = float(self._condition_def.get("voltage_val", 12.0))
+            direction = self._condition_def.get("voltage_dir", "above")
+            raw_v = self.coordinator.normalize_sensor_value("batt_voltage", status.get("batt_voltage"))
+            if isinstance(raw_v, (int, float)):
+                if direction == "above":
+                    self._attr_is_on = raw_v > target_v
+                else:
+                    self._attr_is_on = raw_v < target_v
+                self.async_write_ha_state()
+                return
+
+        elif cond_type == "speed_zero":
+            # Check vehicle speed == 0
+            autopid = self.coordinator.data.get("autopid_data", {})
+            speed = autopid.get("SPEED") or autopid.get("vehicle_speed") or status.get("speed", 0)
+            try:
+                self._attr_is_on = float(speed) == 0
+            except (ValueError, TypeError):
+                self._attr_is_on = True
+            self.async_write_ha_state()
+            return
+
+        # Fallback / CAN state match
         target_can_id = self._condition_def.get("can_id")
         match_payload = self._condition_def.get("match_payload")
 
