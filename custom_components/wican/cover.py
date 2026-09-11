@@ -10,10 +10,12 @@ from homeassistant.components.cover import (
     CoverEntity,
     CoverEntityFeature,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from .const import DOMAIN
 from .entity import WiCANEntity
 from .helpers import wican_exception_handler
 
@@ -25,15 +27,60 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
+DYNAMIC_COVER_ENTITIES: dict[str, dict[str, WiCANChargePortCoverEntity]] = {}
+
+
+def _is_charge_port_action(item: dict) -> bool:
+    act_id = str(item.get("id", "")).lower()
+    return "charge_port" in act_id
+
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     config_entry: WiCANConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up cover platform."""
-    entity = WiCANChargePortCoverEntity(config_entry)
-    async_add_entities([entity])
+    DYNAMIC_COVER_ENTITIES[config_entry.entry_id] = {}
+
+    catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
+    has_charge_port = False
+    matching = []
+
+    if catalog:
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
+        if isinstance(entries, list):
+            matching = [item for item in entries if isinstance(item, dict) and _is_charge_port_action(item)]
+            has_charge_port = len(matching) > 0
+
+    if has_charge_port:
+        entity = WiCANChargePortCoverEntity(config_entry, matching)
+        DYNAMIC_COVER_ENTITIES[config_entry.entry_id]["charge_port"] = entity
+        async_add_entities([entity])
+
+    @callback
+    def handle_catalog_update(webhook_id, data):
+        if webhook_id != config_entry.runtime_data.webhook_id:
+            return
+        cat = data.get("cando_catalog")
+        if not cat:
+            return
+        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
+        if not isinstance(cat_entries, list):
+            return
+
+        matching = [item for item in cat_entries if isinstance(item, dict) and _is_charge_port_action(item)]
+        registered = DYNAMIC_COVER_ENTITIES[config_entry.entry_id]
+        if matching:
+            if "charge_port" in registered:
+                registered["charge_port"]._action_defs = matching
+            else:
+                entity = WiCANChargePortCoverEntity(config_entry, matching)
+                registered["charge_port"] = entity
+                async_add_entities([entity])
+
+    unsub = async_dispatcher_connect(hass, DOMAIN, handle_catalog_update)
+    config_entry.async_on_unload(unsub)
 
 
 class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
@@ -44,7 +91,7 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
     _attr_device_class = CoverDeviceClass.DOOR
     _attr_supported_features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
 
-    def __init__(self, config_entry: WiCANConfigEntry) -> None:
+    def __init__(self, config_entry: WiCANConfigEntry, action_defs: list[dict[str, Any]] | None = None) -> None:
         """Initialize charge port door entity."""
         description = EntityDescription(
             key="charge_port_door",
@@ -52,15 +99,9 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
             icon="mdi:ev-plug-type2",
         )
         super().__init__(config_entry, description)
+        self._action_defs = action_defs or []
         self._attr_unique_id = f"{config_entry.entry_id}_charge_port_door"
         self._attr_is_closed = True
-
-    def _get_catalog_actions(self) -> list[dict[str, Any]]:
-        catalog = self.coordinator.data.get("cando_catalog")
-        if not catalog:
-            return []
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
-        return [item for item in entries if isinstance(item, dict)]
 
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
@@ -72,21 +113,13 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
     @wican_exception_handler
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open charge port door."""
-        actions = self._get_catalog_actions()
-        open_def = next((a for a in actions if "open" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
-
-        if not open_def and actions:
-            _LOGGER.warning("Charge port open action not defined in catalog for this vehicle")
+        if self._attr_is_closed is False:
             return
 
+        open_def = next((a for a in self._action_defs if "open" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
         if not open_def:
-            open_def = {
-                "id": "act_charge_port_door_open",
-                "name": "Charge Port Door Open / Release",
-                "type": "can_tx",
-                "can_id": "0x594",
-                "steps": [{"payload": "01 00 00 00 00 00 00 00", "repeat": 2}],
-            }
+            _LOGGER.warning("No charge port open action defined in catalog for this vehicle")
+            return
 
         success = await self.coordinator.async_execute_action(open_def)
         if success:
@@ -96,21 +129,13 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
     @wican_exception_handler
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close charge port door."""
-        actions = self._get_catalog_actions()
-        close_def = next((a for a in actions if "close" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
-
-        if not close_def and actions:
-            _LOGGER.warning("Charge port close action not defined in catalog for this vehicle")
+        if self._attr_is_closed is True:
             return
 
+        close_def = next((a for a in self._action_defs if "close" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
         if not close_def:
-            close_def = {
-                "id": "act_charge_port_door_close",
-                "name": "Charge Port Door Close",
-                "type": "can_tx",
-                "can_id": "0x594",
-                "steps": [{"payload": "00 00 00 00 00 00 00 00", "repeat": 2}],
-            }
+            _LOGGER.warning("No charge port close action defined in catalog for this vehicle")
+            return
 
         success = await self.coordinator.async_execute_action(close_def)
         if success:

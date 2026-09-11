@@ -33,52 +33,11 @@ async def async_setup_entry(
     """Set up button platform."""
     DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id] = {}
 
-    default_buttons = [
-        {
-            "id": "act_climate_precondition_start",
-            "name": "Climate Precondition Start",
-            "icon": "mdi:fan",
-            "type": "precondition",
-            "state": True,
-        },
-        {
-            "id": "act_climate_precondition_stop",
-            "name": "Climate Precondition Stop",
-            "icon": "mdi:fan-off",
-            "type": "precondition",
-            "state": False,
-        },
-        {
-            "id": "act_hazard_lights_flash",
-            "name": "Hazard Lights Flash",
-            "icon": "mdi:car-emergency",
-            "type": "can_tx",
-            "can_id": "0x582",
-            "steps": [{"payload": "01 00 00 00 00 00 00 00", "repeat": 2}],
-        },
-        {
-            "id": "act_horn_flash_panic",
-            "name": "Horn & Lights Panic Alarm",
-            "icon": "mdi:bugle",
-            "type": "can_tx",
-            "can_id": "0x7A0",
-            "steps": [{"payload": "01 00 00 00 00 00 00 00", "repeat": 2}],
-        },
-        {
-            "id": "act_keepalive_wakeup_ping",
-            "name": "Keepalive / Wakeup Ping",
-            "icon": "mdi:signal-variant",
-            "type": "can_tx",
-            "can_id": "0x7DF",
-            "steps": [{"payload": "02 01 00 00 00 00 00 00", "repeat": 2}],
-        },
-    ]
-
     entities = []
     registered = DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id]
 
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
-    catalog_entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if catalog else None
+    catalog_entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else None
 
     if catalog_entries and isinstance(catalog_entries, list):
         for item in catalog_entries:
@@ -88,11 +47,6 @@ async def async_setup_entry(
                     entity = WiCANActionButtonEntity(config_entry, item)
                     registered[act_id] = entity
                     entities.append(entity)
-    else:
-        for btn_def in default_buttons:
-            entity = WiCANActionButtonEntity(config_entry, btn_def)
-            registered[btn_def["id"]] = entity
-            entities.append(entity)
 
     if entities:
         async_add_entities(entities)
@@ -135,7 +89,6 @@ class WiCANActionButtonEntity(WiCANEntity, ButtonEntity):
         raw_name = action_def.get("name", act_id)
         icon = action_def.get("icon", "mdi:car-cog")
 
-        # Strip act_ prefix for clean entity key if present
         clean_key = act_id[4:] if act_id.startswith("act_") else act_id
 
         description = EntityDescription(

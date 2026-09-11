@@ -6,10 +6,12 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.lock import LockEntity
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from .const import DOMAIN
 from .entity import WiCANEntity
 from .helpers import wican_exception_handler
 
@@ -21,15 +23,60 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
+DYNAMIC_LOCK_ENTITIES: dict[str, dict[str, WiCANVehicleLockEntity]] = {}
+
+
+def _is_lock_action(item: dict) -> bool:
+    act_id = str(item.get("id", "")).lower()
+    return "lock" in act_id or "unlock" in act_id
+
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     config_entry: WiCANConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up lock platform."""
-    entity = WiCANVehicleLockEntity(config_entry)
-    async_add_entities([entity])
+    DYNAMIC_LOCK_ENTITIES[config_entry.entry_id] = {}
+
+    catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
+    has_lock = False
+    matching = []
+
+    if catalog:
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
+        if isinstance(entries, list):
+            matching = [item for item in entries if isinstance(item, dict) and _is_lock_action(item)]
+            has_lock = len(matching) > 0
+
+    if has_lock:
+        entity = WiCANVehicleLockEntity(config_entry, matching)
+        DYNAMIC_LOCK_ENTITIES[config_entry.entry_id]["lock"] = entity
+        async_add_entities([entity])
+
+    @callback
+    def handle_catalog_update(webhook_id, data):
+        if webhook_id != config_entry.runtime_data.webhook_id:
+            return
+        cat = data.get("cando_catalog")
+        if not cat:
+            return
+        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
+        if not isinstance(cat_entries, list):
+            return
+
+        matching = [item for item in cat_entries if isinstance(item, dict) and _is_lock_action(item)]
+        registered = DYNAMIC_LOCK_ENTITIES[config_entry.entry_id]
+        if matching:
+            if "lock" in registered:
+                registered["lock"]._action_defs = matching
+            else:
+                entity = WiCANVehicleLockEntity(config_entry, matching)
+                registered["lock"] = entity
+                async_add_entities([entity])
+
+    unsub = async_dispatcher_connect(hass, DOMAIN, handle_catalog_update)
+    config_entry.async_on_unload(unsub)
 
 
 class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
@@ -38,7 +85,7 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
     _attr_has_entity_name = True
     _attr_name = "Door Locks"
 
-    def __init__(self, config_entry: WiCANConfigEntry) -> None:
+    def __init__(self, config_entry: WiCANConfigEntry, action_defs: list[dict[str, Any]] | None = None) -> None:
         """Initialize vehicle lock entity."""
         description = EntityDescription(
             key="door_locks",
@@ -46,15 +93,9 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
             icon="mdi:car-door-lock",
         )
         super().__init__(config_entry, description)
+        self._action_defs = action_defs or []
         self._attr_unique_id = f"{config_entry.entry_id}_door_locks"
         self._attr_is_locked = True
-
-    def _get_catalog_actions(self) -> list[dict[str, Any]]:
-        catalog = self.coordinator.data.get("cando_catalog")
-        if not catalog:
-            return []
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
-        return [item for item in entries if isinstance(item, dict)]
 
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
@@ -74,21 +115,13 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
     @wican_exception_handler
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock vehicle doors."""
-        actions = self._get_catalog_actions()
-        lock_def = next((a for a in actions if "lock_all" in a.get("id", "").lower() or (a.get("id", "").lower().startswith("act_door_lock"))), None)
-
-        if not lock_def and actions:
-            _LOGGER.warning("Lock action not defined in catalog for this vehicle")
+        if self._attr_is_locked is True:
             return
 
+        lock_def = next((a for a in self._action_defs if "lock" in a.get("id", "").lower() and "unlock" not in a.get("id", "").lower()), None)
         if not lock_def:
-            lock_def = {
-                "id": "act_door_lock_all",
-                "name": "Door Lock All",
-                "type": "can_tx",
-                "can_id": "0x540",
-                "steps": [{"payload": "01 00 00 00 00 00 00 00", "repeat": 2}],
-            }
+            _LOGGER.warning("Lock action not defined in catalog for this vehicle")
+            return
 
         success = await self.coordinator.async_execute_action(lock_def)
         if success:
@@ -98,21 +131,13 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
     @wican_exception_handler
     async def async_unlock(self, **kwargs: Any) -> None:
         """Unlock vehicle doors."""
-        actions = self._get_catalog_actions()
-        unlock_def = next((a for a in actions if "unlock" in a.get("id", "").lower()), None)
-
-        if not unlock_def and actions:
-            _LOGGER.warning("Unlock action not defined in catalog for this vehicle")
+        if self._attr_is_locked is False:
             return
 
+        unlock_def = next((a for a in self._action_defs if "unlock" in a.get("id", "").lower()), None)
         if not unlock_def:
-            unlock_def = {
-                "id": "act_door_unlock_all",
-                "name": "Door Unlock All",
-                "type": "can_tx",
-                "can_id": "0x540",
-                "steps": [{"payload": "02 00 00 00 00 00 00 00", "repeat": 2}],
-            }
+            _LOGGER.warning("Unlock action not defined in catalog for this vehicle")
+            return
 
         success = await self.coordinator.async_execute_action(unlock_def)
         if success:

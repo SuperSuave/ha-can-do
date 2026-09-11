@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from yarl import URL
 
@@ -148,6 +149,10 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         # Notify all entities that data has been updated
         self.async_set_updated_data(self._data)
+
+        # Dispatch DOMAIN signal for platform catalog/update listeners
+        if hasattr(self.config_entry, "runtime_data") and self.config_entry.runtime_data:
+            async_dispatcher_send(self.hass, DOMAIN, self.config_entry.runtime_data.webhook_id, data)
 
     def _validate_device_identity(self, data: dict[str, Any]) -> None:
         """Ensure device identity hasn't changed.

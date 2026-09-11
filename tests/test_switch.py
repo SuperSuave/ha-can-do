@@ -15,7 +15,10 @@ async def test_switch_entity_controls(
 ) -> None:
     """Test switch entity creation, turn_on and turn_off actions."""
     coordinator = init_integration.runtime_data.coordinator
-    catalog_data = [{"id": "act_steering_wheel_heater_toggle", "name": "Steering Heater", "type": "can_tx"}]
+    catalog_data = [
+        {"id": "act_steering_wheel_heater_on", "name": "Steering Heater On", "type": "can_tx"},
+        {"id": "act_steering_wheel_heater_off", "name": "Steering Heater Off", "type": "can_tx"},
+    ]
     coordinator.handle_webhook_data({"cando_catalog": catalog_data})
     await hass.async_block_till_done()
 

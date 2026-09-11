@@ -11,10 +11,12 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from .const import DOMAIN
 from .entity import WiCANEntity
 from .helpers import wican_exception_handler
 
@@ -26,15 +28,61 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
+DYNAMIC_CLIMATE_ENTITIES: dict[str, dict[str, WiCANVehicleClimateEntity]] = {}
+
+
+def _is_climate_action(item: dict) -> bool:
+    act_id = str(item.get("id", "")).lower()
+    act_type = str(item.get("type", "")).lower()
+    return "precondition" in act_id or "climate" in act_id or "hvac" in act_id or act_type == "precondition"
+
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     config_entry: WiCANConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up climate platform."""
-    entity = WiCANVehicleClimateEntity(config_entry)
-    async_add_entities([entity])
+    DYNAMIC_CLIMATE_ENTITIES[config_entry.entry_id] = {}
+
+    catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
+    has_climate = False
+    matching_actions = []
+
+    if catalog:
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
+        if isinstance(entries, list):
+            matching_actions = [item for item in entries if isinstance(item, dict) and _is_climate_action(item)]
+            has_climate = len(matching_actions) > 0
+
+    if has_climate:
+        entity = WiCANVehicleClimateEntity(config_entry, matching_actions)
+        DYNAMIC_CLIMATE_ENTITIES[config_entry.entry_id]["climate"] = entity
+        async_add_entities([entity])
+
+    @callback
+    def handle_catalog_update(webhook_id, data):
+        if webhook_id != config_entry.runtime_data.webhook_id:
+            return
+        cat = data.get("cando_catalog")
+        if not cat:
+            return
+        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
+        if not isinstance(cat_entries, list):
+            return
+
+        matching = [item for item in cat_entries if isinstance(item, dict) and _is_climate_action(item)]
+        registered = DYNAMIC_CLIMATE_ENTITIES[config_entry.entry_id]
+        if matching:
+            if "climate" in registered:
+                registered["climate"]._action_defs = matching
+            else:
+                entity = WiCANVehicleClimateEntity(config_entry, matching)
+                registered["climate"] = entity
+                async_add_entities([entity])
+
+    unsub = async_dispatcher_connect(hass, DOMAIN, handle_catalog_update)
+    config_entry.async_on_unload(unsub)
 
 
 class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
@@ -53,7 +101,7 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
         | ClimateEntityFeature.TURN_OFF
     )
 
-    def __init__(self, config_entry: WiCANConfigEntry) -> None:
+    def __init__(self, config_entry: WiCANConfigEntry, action_defs: list[dict[str, Any]] | None = None) -> None:
         """Initialize vehicle climate entity."""
         description = EntityDescription(
             key="vehicle_climate",
@@ -61,17 +109,11 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
             icon="mdi:fan",
         )
         super().__init__(config_entry, description)
+        self._action_defs = action_defs or []
         self._attr_unique_id = f"{config_entry.entry_id}_vehicle_climate"
         self._attr_hvac_mode = HVACMode.OFF
         self._attr_target_temperature = 21.0
         self._attr_current_temperature = None
-
-    def _get_catalog_actions(self) -> list[dict[str, Any]]:
-        catalog = self.coordinator.data.get("cando_catalog")
-        if not catalog:
-            return []
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
-        return [item for item in entries if isinstance(item, dict)]
 
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
@@ -93,16 +135,15 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
     @wican_exception_handler
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set HVAC mode."""
-        actions = self._get_catalog_actions()
         if hvac_mode == HVACMode.OFF:
-            stop_def = next((a for a in actions if "stop" in a.get("id", "").lower() or a.get("state") is False), None)
+            stop_def = next((a for a in self._action_defs if "stop" in a.get("id", "").lower() or a.get("state") is False), None)
             if stop_def:
                 await self.coordinator.async_execute_action(stop_def)
             else:
                 await self.coordinator.async_trigger_precondition(False)
             self._attr_hvac_mode = HVACMode.OFF
         else:
-            start_def = next((a for a in actions if "start" in a.get("id", "").lower() or a.get("state") is True), None)
+            start_def = next((a for a in self._action_defs if "start" in a.get("id", "").lower() or a.get("state") is True), None)
             if start_def:
                 await self.coordinator.async_execute_action(start_def)
             else:
