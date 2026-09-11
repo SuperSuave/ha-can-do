@@ -97,6 +97,13 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_door_locks"
         self._attr_is_locked = True
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         can_states = self.coordinator.data.get("can_states", {})
@@ -115,10 +122,9 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
     @wican_exception_handler
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock vehicle doors."""
-        if self._attr_is_locked is True:
-            return
+        actions = self._get_catalog_actions()
+        lock_def = next((a for a in actions if "lock" in a.get("id", "").lower() and "unlock" not in a.get("id", "").lower()), None)
 
-        lock_def = next((a for a in self._action_defs if "lock" in a.get("id", "").lower() and "unlock" not in a.get("id", "").lower()), None)
         if not lock_def:
             _LOGGER.warning("Lock action not defined in catalog for this vehicle")
             return
@@ -131,10 +137,9 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
     @wican_exception_handler
     async def async_unlock(self, **kwargs: Any) -> None:
         """Unlock vehicle doors."""
-        if self._attr_is_locked is False:
-            return
+        actions = self._get_catalog_actions()
+        unlock_def = next((a for a in actions if "unlock" in a.get("id", "").lower()), None)
 
-        unlock_def = next((a for a in self._action_defs if "unlock" in a.get("id", "").lower()), None)
         if not unlock_def:
             _LOGGER.warning("Unlock action not defined in catalog for this vehicle")
             return

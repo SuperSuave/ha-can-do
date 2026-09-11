@@ -97,6 +97,13 @@ class WiCANSteeringWheelHeaterSwitchEntity(WiCANEntity, SwitchEntity, RestoreEnt
         self._attr_unique_id = f"{config_entry.entry_id}_steering_wheel_heater"
         self._attr_is_on = False
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -107,12 +114,10 @@ class WiCANSteeringWheelHeaterSwitchEntity(WiCANEntity, SwitchEntity, RestoreEnt
     @wican_exception_handler
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on steering wheel heater."""
-        if self._attr_is_on is True:
-            return
-
-        on_def = next((a for a in self._action_defs if "steering" in a.get("id", "").lower() and ("on" in a.get("id", "").lower() or "start" in a.get("id", "").lower())), None)
+        actions = self._get_catalog_actions()
+        on_def = next((a for a in actions if "steering" in a.get("id", "").lower() and ("on" in a.get("id", "").lower() or "start" in a.get("id", "").lower())), None)
         if not on_def:
-            on_def = next((a for a in self._action_defs if "steering" in a.get("id", "").lower()), None)
+            on_def = next((a for a in actions if "steering" in a.get("id", "").lower()), None)
 
         if not on_def:
             _LOGGER.warning("Steering wheel heater action not defined in catalog for this vehicle")
@@ -126,12 +131,10 @@ class WiCANSteeringWheelHeaterSwitchEntity(WiCANEntity, SwitchEntity, RestoreEnt
     @wican_exception_handler
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off steering wheel heater."""
-        if self._attr_is_on is False:
-            return
-
-        off_def = next((a for a in self._action_defs if "steering" in a.get("id", "").lower() and ("off" in a.get("id", "").lower() or "stop" in a.get("id", "").lower())), None)
+        actions = self._get_catalog_actions()
+        off_def = next((a for a in actions if "steering" in a.get("id", "").lower() and ("off" in a.get("id", "").lower() or "stop" in a.get("id", "").lower())), None)
         if not off_def:
-            off_def = next((a for a in self._action_defs if "steering" in a.get("id", "").lower()), None)
+            off_def = next((a for a in actions if "steering" in a.get("id", "").lower()), None)
 
         if not off_def:
             _LOGGER.warning("Steering wheel heater action not defined in catalog for this vehicle")

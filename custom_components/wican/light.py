@@ -99,6 +99,13 @@ class WiCANAmbientLightEntity(WiCANEntity, LightEntity, RestoreEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_ambient_light"
         self._attr_is_on = False
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -109,10 +116,9 @@ class WiCANAmbientLightEntity(WiCANEntity, LightEntity, RestoreEntity):
     @wican_exception_handler
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on interior ambient lighting."""
-        if self._attr_is_on is True:
-            return
+        actions = self._get_catalog_actions()
+        on_def = next((a for a in actions if ("ambient" in a.get("id", "").lower() or "mood" in a.get("id", "").lower()) and "off" not in a.get("id", "").lower()), None)
 
-        on_def = next((a for a in self._action_defs if "off" not in a.get("id", "").lower()), None)
         if not on_def:
             _LOGGER.warning("No ambient light on action defined in catalog for this vehicle")
             return
@@ -125,12 +131,11 @@ class WiCANAmbientLightEntity(WiCANEntity, LightEntity, RestoreEntity):
     @wican_exception_handler
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off interior ambient lighting."""
-        if self._attr_is_on is False:
-            return
+        actions = self._get_catalog_actions()
+        off_def = next((a for a in actions if ("ambient" in a.get("id", "").lower() or "mood" in a.get("id", "").lower()) and "off" in a.get("id", "").lower()), None)
 
-        off_def = next((a for a in self._action_defs if "off" in a.get("id", "").lower()), None)
         if not off_def:
-            off_def = next((a for a in self._action_defs if "ambient" in a.get("id", "").lower() or "mood" in a.get("id", "").lower()), None)
+            off_def = next((a for a in actions if "ambient" in a.get("id", "").lower() or "mood" in a.get("id", "").lower()), None)
 
         if not off_def:
             _LOGGER.warning("No ambient light off action defined in catalog for this vehicle")

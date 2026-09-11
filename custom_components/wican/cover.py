@@ -103,6 +103,13 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_charge_port_door"
         self._attr_is_closed = True
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -113,12 +120,11 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
     @wican_exception_handler
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open charge port door."""
-        if self._attr_is_closed is False:
-            return
+        actions = self._get_catalog_actions()
+        open_def = next((a for a in actions if "open" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
 
-        open_def = next((a for a in self._action_defs if "open" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
         if not open_def:
-            _LOGGER.warning("No charge port open action defined in catalog for this vehicle")
+            _LOGGER.warning("Charge port open action not defined in catalog for this vehicle")
             return
 
         success = await self.coordinator.async_execute_action(open_def)
@@ -129,12 +135,11 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
     @wican_exception_handler
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close charge port door."""
-        if self._attr_is_closed is True:
-            return
+        actions = self._get_catalog_actions()
+        close_def = next((a for a in actions if "close" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
 
-        close_def = next((a for a in self._action_defs if "close" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
         if not close_def:
-            _LOGGER.warning("No charge port close action defined in catalog for this vehicle")
+            _LOGGER.warning("Charge port close action not defined in catalog for this vehicle")
             return
 
         success = await self.coordinator.async_execute_action(close_def)
