@@ -20,7 +20,7 @@ from .const import (
     MAX_POST_INTERVAL,
     MIN_POST_INTERVAL,
 )
-from .helpers import resolve_webhook_url
+from .helpers import clean_mdns_host, format_friendly_name, resolve_webhook_url
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
@@ -50,9 +50,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle manual setup initiated by the user."""
         if user_input is not None:
-            mdns = user_input.get("mdns")
-            host = user_input.get(CONF_HOST)
+            mdns = clean_mdns_host(user_input.get("mdns"))
+            host = clean_mdns_host(user_input.get(CONF_HOST))
             title = host or mdns or "WiCAN"
+            if title.lower().startswith("wican_") and title.endswith(".local"):
+                title = "WiCAN Vehicle"
             webhook_id = uuid4().hex
             webhook_url = resolve_webhook_url(
                 self.hass,
@@ -126,16 +128,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         # Store mdns/host for setup to attempt webhook registration later
-        mdns_target = hostname or host
-        mdns_url = _format_http_url(mdns_target, port)
-        host_url = _format_http_url(host_ip or host, port)
+        mdns_target = clean_mdns_host(hostname or host)
+        mdns_url = clean_mdns_host(_format_http_url(mdns_target, port))
+        host_url = clean_mdns_host(_format_http_url(host_ip or host, port))
+
+        clean_name = clean_mdns_host(hostname or name)
+        if clean_name and clean_name.lower().startswith("wican_") and clean_name.endswith(".local"):
+            clean_name = "WiCAN Vehicle"
 
         _LOGGER.info("WiCAN discovered via Zeroconf: name=%s hostname=%s url=%s", name, hostname, mdns_url)
 
         # Store discovery info for confirmation step
         self.discovered_mdns = mdns_url
         self.discovered_host = host_url
-        self.discovered_name = hostname or name
+        self.discovered_name = clean_name
         self.discovered_unique_id = unique_id
         self.discovered_mac = mac_address
         self.discovered_device_id = device_id
@@ -222,6 +228,9 @@ def _format_http_url(address: str | None, port: int | None) -> str | None:
         return None
 
     address = address.strip()
+    if address.endswith("."):
+        address = address[:-1]
+
     if not address:
         return None
 
@@ -232,7 +241,7 @@ def _format_http_url(address: str | None, port: int | None) -> str | None:
         return str(
             URL.build(
                 scheme="http",
-                host=address.strip("[]"),
+                host=address.strip("[]").rstrip("."),
                 port=port,
             ),
         )

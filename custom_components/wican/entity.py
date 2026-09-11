@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity import UNDEFINED, EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import WiCANDataUpdateCoordinator
+from .helpers import clean_mdns_host, format_friendly_name
 
 if TYPE_CHECKING:
-    from homeassistant.helpers.entity import EntityDescription
-
     from . import WiCANConfigEntry
 
 
@@ -35,21 +35,24 @@ class WiCANEntity(CoordinatorEntity[WiCANDataUpdateCoordinator]):
         self._attr_unique_id = f"{config_entry.entry_id}_{entity_description.key}"
         self.entity_description = entity_description
         self.webhook_id = config_entry.runtime_data.webhook_id
-        self._attr_name = entity_description.key
+        raw_name = getattr(entity_description, "name", None)
+        if raw_name is None or raw_name is UNDEFINED:
+            raw_name = entity_description.key
+        self._attr_name = format_friendly_name(raw_name)
         self._attr_device_info = DeviceInfo(
             connections={(DOMAIN, config_entry.entry_id)},
             manufacturer="MeatPi",
             model="WiCAN",
-            name=config_entry.title,
+            name=clean_mdns_host(config_entry.title),
         )
 
-    @abstractmethod
     def _async_handle_event(self, webhook_id: str, data: dict[str, str]) -> None:
         """Handle the WiCAN event.
 
         This method is kept for backward compatibility during migration.
         Subclasses should override _handle_coordinator_update() instead.
         """
+        pass
 
     async def async_added_to_hass(self) -> None:
         """Register event callback."""
@@ -75,9 +78,14 @@ class WiCANEntity(CoordinatorEntity[WiCANDataUpdateCoordinator]):
     def device_info(self) -> DeviceInfo:
         """Return device info."""
         info = self.config_entry.data
-        config_url = info.get("mdns")
+        config_url = clean_mdns_host(info.get("mdns"))
         if not isinstance(config_url, str) or not config_url.startswith("http"):
             config_url = None
+
+        # Clean title for vehicle device name
+        title = clean_mdns_host(self.config_entry.title) or "WiCAN Vehicle"
+        if title.lower().startswith("wican_") and title.endswith(".local"):
+            title = "WiCAN Vehicle"
 
         # Use device_id or MAC as stable identifier (survives hostname changes)
         device_id = info.get("device_id") or self.config_entry.entry_id
@@ -86,8 +94,8 @@ class WiCANEntity(CoordinatorEntity[WiCANDataUpdateCoordinator]):
         device_info_dict = {
             "identifiers": {(DOMAIN, device_id)},
             "manufacturer": "MeatPi",
-            "model": info.get("hw_version", "Unknown"),
-            "name": self.config_entry.title,
+            "model": info.get("hw_version", "WiCAN"),
+            "name": title,
             "sw_version": info.get("fw_version", "Unknown"),
             "configuration_url": config_url,
         }

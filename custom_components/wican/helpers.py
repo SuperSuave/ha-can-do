@@ -27,6 +27,63 @@ _WiCANEntityT = TypeVar("_WiCANEntityT", bound="WiCANEntity")
 _P = TypeVar("_P")
 
 
+def clean_mdns_host(host_or_url: str | None) -> str | None:
+    """Remove trailing dot from mDNS host or URL string."""
+    if not host_or_url:
+        return host_or_url
+    s = host_or_url.strip()
+    if s.endswith("."):
+        s = s[:-1]
+    return s
+
+
+def format_friendly_name(key_or_name: Any) -> str:
+    """Format snake_case, camelCase, or PID key into a human-readable title."""
+    if not key_or_name or str(type(key_or_name)).find("Undefined") != -1 or not isinstance(key_or_name, str):
+        return ""
+
+    # Known acronym overrides
+    acronyms = {
+        "ecu": "ECU",
+        "ble": "BLE",
+        "vpn": "VPN",
+        "wifi": "WiFi",
+        "can": "CAN",
+        "pid": "PID",
+        "rpm": "RPM",
+        "maf": "MAF",
+        "stft": "STFT",
+        "ltft": "LTFT",
+        "soc": "SOC",
+        "soh": "SOH",
+        "hv": "HV",
+        "lv": "LV",
+        "ac": "AC",
+        "dc": "DC",
+        "hvac": "HVAC",
+        "gps": "GPS",
+    }
+
+    # If already formatted with spaces and capitals, preserve it
+    if " " in key_or_name and any(c.isupper() for c in key_or_name):
+        return key_or_name
+
+    # Replace dashes and underscores with spaces
+    cleaned = key_or_name.replace("_", " ").replace("-", " ").strip()
+
+    # Split into words and format
+    words = cleaned.split()
+    formatted_words = []
+    for word in words:
+        w_lower = word.lower()
+        if w_lower in acronyms:
+            formatted_words.append(acronyms[w_lower])
+        else:
+            formatted_words.append(word.capitalize())
+
+    return " ".join(formatted_words)
+
+
 def build_webhook_url(base_url: str, webhook_id: str) -> str:
     """Build an absolute webhook URL from a base URL and webhook id."""
     return str(URL(base_url) / webhook.async_generate_path(webhook_id).lstrip("/"))

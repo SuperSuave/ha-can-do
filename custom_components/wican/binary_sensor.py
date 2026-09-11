@@ -9,9 +9,11 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .attributes import BINARY_SENSOR_DESCRIPTIONS, WiCANBinarySensorEntityDescription, get_sensor_attributes
+from .const import DOMAIN
 from .entity import WiCANEntity
 
 if TYPE_CHECKING:
@@ -24,13 +26,25 @@ PARALLEL_UPDATES = 0
 
 TRUE_STRINGS = {"enable", "true", "online"}
 
+
 def is_true_status(value: str) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in TRUE_STRINGS
     return bool(value)
 
+
+def _is_condition_entry(item: dict) -> bool:
+    if not isinstance(item, dict):
+        return False
+    roles = item.get("roles")
+    if roles and isinstance(roles, list):
+        return "condition" in roles
+    entry_type = str(item.get("type", "")).lower()
+    return entry_type in ("can_state", "voltage", "speed_zero", "param_range", "day_of_week", "time_window")
+
+
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     config_entry: WiCANConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -41,15 +55,46 @@ async def async_setup_entry(
         for description in BINARY_SENSOR_DESCRIPTIONS
     ]
 
+    created_cond_ids: set[str] = set()
+
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
     if catalog:
         entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
         if isinstance(entries, list):
             for item in entries:
-                if isinstance(item, dict) and item.get("type") == "can_state":
-                    entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
+                if _is_condition_entry(item):
+                    cond_id = item.get("id")
+                    if cond_id and cond_id not in created_cond_ids:
+                        created_cond_ids.add(cond_id)
+                        entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
 
     async_add_entities(entities)
+
+    @callback
+    def handle_catalog_update(webhook_id, data):
+        if webhook_id != config_entry.runtime_data.webhook_id:
+            return
+        cat = data.get("cando_catalog")
+        if not cat:
+            return
+        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
+        if not isinstance(cat_entries, list):
+            return
+
+        new_entities = []
+        for item in cat_entries:
+            if _is_condition_entry(item):
+                cond_id = item.get("id")
+                if cond_id and cond_id not in created_cond_ids:
+                    created_cond_ids.add(cond_id)
+                    new_entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
+
+        if new_entities:
+            async_add_entities(new_entities)
+
+    unsub = async_dispatcher_connect(hass, DOMAIN, handle_catalog_update)
+    config_entry.async_on_unload(unsub)
+
 
 class WiCANBinarySensorEntity(WiCANEntity, BinarySensorEntity, RestoreEntity):
     """A binary sensor entity."""
@@ -69,28 +114,23 @@ class WiCANBinarySensorEntity(WiCANEntity, BinarySensorEntity, RestoreEntity):
         key = self.entity_description.key
         status = self.coordinator.data.get("status", {})
 
-        # If key not present, don't change state. Availability handled below.
         if key in status:
             self._attr_is_on = is_true_status(status[key])
             self._attr_extra_state_attributes = get_sensor_attributes(key, self.coordinator.data)
 
-        # Availability: if we have a status dict, entity is available; if device stopped pushing,
-        # HA will keep last state, but we still emit state writes on updates to ensure logbook records.
-        # Write state to Home Assistant.
         self.async_write_ha_state()
 
     @callback
     def _async_handle_event(self, webhook_id: str, data) -> None:
         """Handle webhook event (backward compatibility)."""
-        # Coordinator update will trigger _handle_coordinator_update()
 
     async def async_added_to_hass(self) -> None:
         """Restore entity state."""
-        # Restore last known state so logbook has a baseline before first push
         last_state = await self.async_get_last_state()
         if last_state is not None and self._attr_is_on is None:
             self._attr_is_on = last_state.state == "on"
         await super().async_added_to_hass()
+
 
 def match_can_payload(raw_hex: str, pattern: str) -> bool:
     """Check if raw hex string matches pattern (e.g. '* * 00 * * * * *' or '!12 *')."""
@@ -142,7 +182,36 @@ class WiCANCanConditionBinarySensorEntity(WiCANEntity, BinarySensorEntity, Resto
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from coordinator."""
+        cond_type = self._condition_def.get("type")
+        status = self.coordinator.data.get("status", {})
         can_states = self.coordinator.data.get("can_states", {})
+
+        if cond_type == "voltage":
+            target_v = float(self._condition_def.get("voltage_val", 12.0))
+            direction = self._condition_def.get("voltage_dir", "above")
+            raw_v = self.coordinator.normalize_sensor_value("batt_voltage", status.get("batt_voltage"))
+            if isinstance(raw_v, (int, float)):
+                if direction == "above":
+                    self._attr_is_on = raw_v > target_v
+                else:
+                    self._attr_is_on = raw_v < target_v
+                self.async_write_ha_state()
+                return
+
+        elif cond_type == "speed_zero":
+            autopid = self.coordinator.data.get("autopid_data", {})
+            raw_speed = autopid.get("SPEED") if "SPEED" in autopid else autopid.get("vehicle_speed") if "vehicle_speed" in autopid else status.get("speed")
+            if raw_speed is not None:
+                try:
+                    speed_float = float(raw_speed)
+                    self._attr_is_on = (speed_float == 0)
+                except (ValueError, TypeError):
+                    self._attr_is_on = False
+            else:
+                self._attr_is_on = False
+            self.async_write_ha_state()
+            return
+
         target_can_id = self._condition_def.get("can_id")
         match_payload = self._condition_def.get("match_payload")
 
