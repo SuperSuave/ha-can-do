@@ -25,6 +25,16 @@ PARALLEL_UPDATES = 0
 DYNAMIC_BUTTON_ENTITIES: dict[str, dict[str, WiCANActionButtonEntity]] = {}
 
 
+def _is_action_entry(item: dict) -> bool:
+    if not isinstance(item, dict):
+        return False
+    roles = item.get("roles")
+    if roles and isinstance(roles, list):
+        return "action" in roles
+    entry_type = str(item.get("type", "")).lower()
+    return entry_type in ("can_tx", "webhook", "mqtt", "precondition")
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: WiCANConfigEntry,
@@ -41,7 +51,7 @@ async def async_setup_entry(
 
     if catalog_entries and isinstance(catalog_entries, list):
         for item in catalog_entries:
-            if isinstance(item, dict) and "action" in item.get("roles", ["action"]):
+            if _is_action_entry(item):
                 act_id = item.get("id")
                 if act_id and act_id not in registered:
                     entity = WiCANActionButtonEntity(config_entry, item)
@@ -64,7 +74,7 @@ async def async_setup_entry(
 
         new_entities = []
         for item in cat_entries:
-            if isinstance(item, dict) and "action" in item.get("roles", ["action"]):
+            if _is_action_entry(item):
                 act_id = item.get("id")
                 if act_id and act_id not in registered:
                     entity = WiCANActionButtonEntity(config_entry, item)

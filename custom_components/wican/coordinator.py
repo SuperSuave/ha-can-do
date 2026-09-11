@@ -272,7 +272,7 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return False
 
-    async def async_trigger_precondition(self, state: bool | None = None) -> bool:
+    async def async_trigger_precondition(self, state: bool | None = None, target_temp: float | None = None) -> bool:
         """Send a precondition toggle command to the WiCAN device (/precondition_toggle)."""
         base_url = self._get_device_base_url()
         if not base_url:
@@ -285,6 +285,8 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             payload = {}
             if state is not None:
                 payload["state"] = "on" if state else "off"
+            if target_temp is not None:
+                payload["target_temp"] = target_temp
             async with asyncio.timeout(10):
                 response = await session.post(url, json=payload)
                 if response.status in (200, 201, 204):

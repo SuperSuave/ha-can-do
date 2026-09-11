@@ -138,25 +138,39 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
         if hvac_mode == HVACMode.OFF:
             stop_def = next((a for a in self._action_defs if "stop" in a.get("id", "").lower() or a.get("state") is False), None)
             if stop_def:
-                await self.coordinator.async_execute_action(stop_def)
+                success = await self.coordinator.async_execute_action(stop_def)
             else:
-                await self.coordinator.async_trigger_precondition(False)
-            self._attr_hvac_mode = HVACMode.OFF
+                success = await self.coordinator.async_trigger_precondition(False)
+            if success:
+                self._attr_hvac_mode = HVACMode.OFF
+                self.async_write_ha_state()
         else:
             start_def = next((a for a in self._action_defs if "start" in a.get("id", "").lower() or a.get("state") is True), None)
             if start_def:
-                await self.coordinator.async_execute_action(start_def)
+                success = await self.coordinator.async_execute_action(start_def)
             else:
-                await self.coordinator.async_trigger_precondition(True)
-            self._attr_hvac_mode = HVACMode.HEAT_COOL
-        self.async_write_ha_state()
+                success = await self.coordinator.async_trigger_precondition(True)
+            if success:
+                self._attr_hvac_mode = HVACMode.HEAT_COOL
+                self.async_write_ha_state()
 
     @wican_exception_handler
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set target temperature."""
         if (temp := kwargs.get(ATTR_TEMPERATURE)) is not None:
-            self._attr_target_temperature = temp
-            self.async_write_ha_state()
+            temp_def = next((a for a in self._action_defs if "temp" in a.get("id", "").lower()), None)
+            if temp_def:
+                action_payload = dict(temp_def)
+                action_payload["target_temp"] = temp
+                success = await self.coordinator.async_execute_action(action_payload)
+            else:
+                success = await self.coordinator.async_trigger_precondition(
+                    state=(self._attr_hvac_mode != HVACMode.OFF),
+                    target_temp=temp,
+                )
+            if success:
+                self._attr_target_temperature = temp
+                self.async_write_ha_state()
 
     @wican_exception_handler
     async def async_turn_on(self) -> None:
