@@ -28,10 +28,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up light platform."""
-    entities = [
-        WiCANAmbientLightEntity(config_entry),
-    ]
-    async_add_entities(entities)
+    entity = WiCANAmbientLightEntity(config_entry)
+    async_add_entities([entity])
 
 
 class WiCANAmbientLightEntity(WiCANEntity, LightEntity, RestoreEntity):
@@ -53,6 +51,13 @@ class WiCANAmbientLightEntity(WiCANEntity, LightEntity, RestoreEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_ambient_light"
         self._attr_is_on = False
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -63,14 +68,23 @@ class WiCANAmbientLightEntity(WiCANEntity, LightEntity, RestoreEntity):
     @wican_exception_handler
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on interior ambient lighting."""
-        action_payload = {
-            "id": "act_interior_ambient_mood_lighting",
-            "name": "Interior Ambient Mood Lighting",
-            "type": "can_tx",
-            "can_id": "0x4AD",
-            "steps": [{"payload": "80 00 F0 0F 00 00 00 00", "repeat": 2}],
-        }
-        success = await self.coordinator.async_execute_action(action_payload)
+        actions = self._get_catalog_actions()
+        on_def = next((a for a in actions if ("ambient" in a.get("id", "").lower() or "mood" in a.get("id", "").lower()) and "off" not in a.get("id", "").lower()), None)
+
+        if not on_def and actions:
+            _LOGGER.warning("Ambient light on action not defined in catalog for this vehicle")
+            return
+
+        if not on_def:
+            on_def = {
+                "id": "act_interior_ambient_mood_lighting",
+                "name": "Interior Ambient Mood Lighting",
+                "type": "can_tx",
+                "can_id": "0x4AD",
+                "steps": [{"payload": "80 00 F0 0F 00 00 00 00", "repeat": 2}],
+            }
+
+        success = await self.coordinator.async_execute_action(on_def)
         if success:
             self._attr_is_on = True
             self.async_write_ha_state()
@@ -78,14 +92,23 @@ class WiCANAmbientLightEntity(WiCANEntity, LightEntity, RestoreEntity):
     @wican_exception_handler
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off interior ambient lighting."""
-        action_payload = {
-            "id": "act_interior_ambient_mood_lighting_off",
-            "name": "Interior Ambient Mood Lighting Off",
-            "type": "can_tx",
-            "can_id": "0x4AD",
-            "steps": [{"payload": "00 00 00 00 00 00 00 00", "repeat": 2}],
-        }
-        success = await self.coordinator.async_execute_action(action_payload)
+        actions = self._get_catalog_actions()
+        off_def = next((a for a in actions if ("ambient" in a.get("id", "").lower() or "mood" in a.get("id", "").lower()) and "off" in a.get("id", "").lower()), None)
+
+        if not off_def and actions:
+            _LOGGER.warning("Ambient light off action not defined in catalog for this vehicle")
+            return
+
+        if not off_def:
+            off_def = {
+                "id": "act_interior_ambient_mood_lighting_off",
+                "name": "Interior Ambient Mood Lighting Off",
+                "type": "can_tx",
+                "can_id": "0x4AD",
+                "steps": [{"payload": "00 00 00 00 00 00 00 00", "repeat": 2}],
+            }
+
+        success = await self.coordinator.async_execute_action(off_def)
         if success:
             self._attr_is_on = False
             self.async_write_ha_state()

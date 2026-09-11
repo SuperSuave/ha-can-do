@@ -14,6 +14,11 @@ async def test_switch_entity_controls(
     init_integration: MockConfigEntry,
 ) -> None:
     """Test switch entity creation, turn_on and turn_off actions."""
+    coordinator = init_integration.runtime_data.coordinator
+    catalog_data = [{"id": "act_steering_wheel_heater_toggle", "name": "Steering Heater", "type": "can_tx"}]
+    coordinator.handle_webhook_data({"cando_catalog": catalog_data})
+    await hass.async_block_till_done()
+
     state = hass.states.get("switch.wican_device_steering_wheel_heater")
     assert state is not None
 

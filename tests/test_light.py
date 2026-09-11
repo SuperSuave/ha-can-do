@@ -14,6 +14,14 @@ async def test_light_entity_creation_and_controls(
     init_integration: MockConfigEntry,
 ) -> None:
     """Test light entity creation, turn_on and turn_off actions."""
+    coordinator = init_integration.runtime_data.coordinator
+    catalog_data = [
+        {"id": "act_interior_ambient_mood_lighting", "name": "Ambient Light", "type": "can_tx"},
+        {"id": "act_interior_ambient_mood_lighting_off", "name": "Ambient Light Off", "type": "can_tx"},
+    ]
+    coordinator.handle_webhook_data({"cando_catalog": catalog_data})
+    await hass.async_block_till_done()
+
     state = hass.states.get("light.wican_device_interior_ambient_mood_lighting")
     assert state is not None
 

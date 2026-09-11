@@ -32,7 +32,7 @@ def is_true_status(value: str) -> bool:
     return bool(value)
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     config_entry: WiCANConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -80,7 +80,7 @@ async def async_setup_entry(
         if new_entities:
             async_add_entities(new_entities)
 
-    unsub = async_dispatcher_connect(_hass, DOMAIN, handle_catalog_update)
+    unsub = async_dispatcher_connect(hass, DOMAIN, handle_catalog_update)
     config_entry.async_on_unload(unsub)
 
 class WiCANBinarySensorEntity(WiCANEntity, BinarySensorEntity, RestoreEntity):

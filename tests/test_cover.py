@@ -14,6 +14,14 @@ async def test_cover_entity_creation_and_controls(
     init_integration: MockConfigEntry,
 ) -> None:
     """Test cover entity creation, open and close actions."""
+    coordinator = init_integration.runtime_data.coordinator
+    catalog_data = [
+        {"id": "act_charge_port_door_open", "name": "Charge Port Open", "type": "can_tx"},
+        {"id": "act_charge_port_door_close", "name": "Charge Port Close", "type": "can_tx"},
+    ]
+    coordinator.handle_webhook_data({"cando_catalog": catalog_data})
+    await hass.async_block_till_done()
+
     state = hass.states.get("cover.wican_device_charge_port_door")
     assert state is not None
 

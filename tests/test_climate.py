@@ -15,11 +15,19 @@ async def test_climate_entity_creation_and_controls(
     init_integration: MockConfigEntry,
 ) -> None:
     """Test climate entity creation, mode change, and temperature setting."""
+    coordinator = init_integration.runtime_data.coordinator
+    catalog_data = [{"id": "act_climate_precondition_start", "name": "Start Precon", "type": "precondition"}]
+    coordinator.handle_webhook_data({"cando_catalog": catalog_data})
+    await hass.async_block_till_done()
+
     state = hass.states.get("climate.wican_device_climate_preconditioning")
     assert state is not None
     assert state.state == HVACMode.OFF
 
     with patch(
+        "custom_components.wican.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
+        return_value=True,
+    ) as mock_execute, patch(
         "custom_components.wican.coordinator.WiCANDataUpdateCoordinator.async_trigger_precondition",
         return_value=True,
     ) as mock_trigger:
@@ -33,7 +41,7 @@ async def test_climate_entity_creation_and_controls(
             },
             blocking=True,
         )
-        assert mock_trigger.called
+        assert mock_execute.called or mock_trigger.called
 
         # Set temperature
         await hass.services.async_call(

@@ -11,7 +11,7 @@ from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .entity import WiCANEntity
-from .helpers import format_friendly_name, wican_exception_handler
+from .helpers import wican_exception_handler
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -40,16 +40,6 @@ class WiCANAmbientMoodLightSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
 
     _attr_has_entity_name = True
     _attr_name = "Mood Light Theme"
-    _attr_options = [
-        "Electric Blue",
-        "Cyan / Aqua Wave",
-        "Deep Purple / Violet",
-        "Magenta / Neon Pink",
-        "Crimson Red",
-        "Warm Sunset / Amber",
-        "Lime / Mint Glow",
-        "Warm White / Champagne",
-    ]
 
     def __init__(self, config_entry: WiCANConfigEntry) -> None:
         """Initialize ambient light select entity."""
@@ -60,7 +50,25 @@ class WiCANAmbientMoodLightSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         )
         super().__init__(config_entry, description)
         self._attr_unique_id = f"{config_entry.entry_id}_mood_light_theme"
-        self._attr_current_option = "Deep Purple / Violet"
+
+        self._attr_options = [
+            "Electric Blue",
+            "Cyan / Aqua Wave",
+            "Deep Purple / Violet",
+            "Magenta / Neon Pink",
+            "Crimson Red",
+            "Warm Sunset / Amber",
+            "Lime / Mint Glow",
+            "Warm White / Champagne",
+        ]
+        self._attr_current_option = self._attr_options[0]
+
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
 
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
@@ -75,26 +83,24 @@ class WiCANAmbientMoodLightSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         if option not in self._attr_options:
             raise ValueError(f"Invalid option: {option}")
 
-        # Option payload mappings
-        payload_map = {
-            "Electric Blue": "00 54 F1 0F 00 00 00 00",
-            "Cyan / Aqua Wave": "00 64 53 0F 00 00 00 00",
-            "Deep Purple / Violet": "80 00 F0 0F 00 00 00 00",
-            "Magenta / Neon Pink": "FF 00 10 0F 00 00 00 00",
-            "Crimson Red": "FE 88 00 00 00 00 00 00",
-            "Warm Sunset / Amber": "FF 50 72 07 00 00 00 00",
-            "Lime / Mint Glow": "F7 FC 63 0B 00 00 00 00",
-            "Warm White / Champagne": "FE B4 53 0A 00 00 00 00",
-        }
+        actions = self._get_catalog_actions()
+        action_def = next((a for a in actions if "ambient" in a.get("id", "").lower() or "mood" in a.get("id", "").lower()), None)
 
-        payload = payload_map.get(option, "80 00 F0 0F 00 00 00 00")
-        action_payload = {
+        matched_opt = None
+        if action_def and "options" in action_def:
+            matched_opt = next((o for o in action_def["options"] if isinstance(o, dict) and o.get("label") == option), None)
+
+        payload = matched_opt.get("payload") if matched_opt else None
+
+        action_payload = dict(action_def) if action_def else {
             "id": "act_interior_ambient_mood_lighting",
             "name": f"Ambient: {option}",
             "type": "can_tx",
             "can_id": "0x4AD",
-            "steps": [{"payload": payload, "repeat": 2}],
         }
+        if payload:
+            action_payload["steps"] = [{"payload": payload, "repeat": 2}]
+
         success = await self.coordinator.async_execute_action(action_payload)
         if success:
             self._attr_current_option = option
@@ -126,6 +132,13 @@ class WiCANDriverSeatHeaterSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         self._attr_unique_id = f"{config_entry.entry_id}_driver_seat_heater_level"
         self._attr_current_option = "OFF"
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -139,22 +152,24 @@ class WiCANDriverSeatHeaterSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         if option not in self._attr_options:
             raise ValueError(f"Invalid option: {option}")
 
-        level_map = {
-            "OFF": "00 00 00 00 00 00 00 00",
-            "LOW": "06 00 00 00 00 00 00 00",
-            "MED": "0C 00 00 00 00 00 00 00",
-            "MAX": "12 00 00 00 00 00 00 00",
-        }
+        actions = self._get_catalog_actions()
+        action_def = next((a for a in actions if option.lower() in a.get("id", "").lower()), None)
+        if not action_def:
+            level_map = {
+                "OFF": "00 00 00 00 00 00 00 00",
+                "LOW": "06 00 00 00 00 00 00 00",
+                "MED": "0C 00 00 00 00 00 00 00",
+                "MAX": "12 00 00 00 00 00 00 00",
+            }
+            action_def = {
+                "id": f"act_driver_seat_heater_{option.lower()}",
+                "name": f"Driver Seat Heater ({option})",
+                "type": "can_tx",
+                "can_id": "0x496",
+                "steps": [{"payload": level_map.get(option, "00 00 00 00 00 00 00 00"), "repeat": 2}],
+            }
 
-        payload = level_map.get(option, "00 00 00 00 00 00 00 00")
-        action_payload = {
-            "id": f"act_driver_seat_heater_{option.lower()}",
-            "name": f"Driver Seat Heater ({option})",
-            "type": "can_tx",
-            "can_id": "0x496",
-            "steps": [{"payload": payload, "repeat": 2}],
-        }
-        success = await self.coordinator.async_execute_action(action_payload)
+        success = await self.coordinator.async_execute_action(action_def)
         if success:
             self._attr_current_option = option
             self.async_write_ha_state()

@@ -11,7 +11,7 @@ from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .entity import WiCANEntity
-from .helpers import format_friendly_name, wican_exception_handler
+from .helpers import wican_exception_handler
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -28,10 +28,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up switch platform."""
-    entities = [
-        WiCANSteeringWheelHeaterSwitchEntity(config_entry),
-    ]
-    async_add_entities(entities)
+    entity = WiCANSteeringWheelHeaterSwitchEntity(config_entry)
+    async_add_entities([entity])
 
 
 class WiCANSteeringWheelHeaterSwitchEntity(WiCANEntity, SwitchEntity, RestoreEntity):
@@ -51,6 +49,13 @@ class WiCANSteeringWheelHeaterSwitchEntity(WiCANEntity, SwitchEntity, RestoreEnt
         self._attr_unique_id = f"{config_entry.entry_id}_steering_wheel_heater"
         self._attr_is_on = False
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -61,14 +66,23 @@ class WiCANSteeringWheelHeaterSwitchEntity(WiCANEntity, SwitchEntity, RestoreEnt
     @wican_exception_handler
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on steering wheel heater."""
-        action_payload = {
-            "id": "act_steering_wheel_heater_toggle",
-            "name": "Steering Wheel Heater Toggle",
-            "type": "can_tx",
-            "can_id": "0x496",
-            "steps": [{"payload": "12 00 00 00 00 00 00 00", "repeat": 2}],
-        }
-        success = await self.coordinator.async_execute_action(action_payload)
+        actions = self._get_catalog_actions()
+        toggle_def = next((a for a in actions if "steering" in a.get("id", "").lower()), None)
+
+        if not toggle_def and actions:
+            _LOGGER.warning("Steering wheel heater action not defined in catalog for this vehicle")
+            return
+
+        if not toggle_def:
+            toggle_def = {
+                "id": "act_steering_wheel_heater_toggle",
+                "name": "Steering Wheel Heater Toggle",
+                "type": "can_tx",
+                "can_id": "0x496",
+                "steps": [{"payload": "12 00 00 00 00 00 00 00", "repeat": 2}],
+            }
+
+        success = await self.coordinator.async_execute_action(toggle_def)
         if success:
             self._attr_is_on = True
             self.async_write_ha_state()
@@ -76,14 +90,23 @@ class WiCANSteeringWheelHeaterSwitchEntity(WiCANEntity, SwitchEntity, RestoreEnt
     @wican_exception_handler
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off steering wheel heater."""
-        action_payload = {
-            "id": "act_steering_wheel_heater_toggle",
-            "name": "Steering Wheel Heater Toggle",
-            "type": "can_tx",
-            "can_id": "0x496",
-            "steps": [{"payload": "00 00 00 00 00 00 00 00", "repeat": 2}],
-        }
-        success = await self.coordinator.async_execute_action(action_payload)
+        actions = self._get_catalog_actions()
+        toggle_def = next((a for a in actions if "steering" in a.get("id", "").lower()), None)
+
+        if not toggle_def and actions:
+            _LOGGER.warning("Steering wheel heater action not defined in catalog for this vehicle")
+            return
+
+        if not toggle_def:
+            toggle_def = {
+                "id": "act_steering_wheel_heater_toggle",
+                "name": "Steering Wheel Heater Toggle",
+                "type": "can_tx",
+                "can_id": "0x496",
+                "steps": [{"payload": "00 00 00 00 00 00 00 00", "repeat": 2}],
+            }
+
+        success = await self.coordinator.async_execute_action(toggle_def)
         if success:
             self._attr_is_on = False
             self.async_write_ha_state()

@@ -33,7 +33,6 @@ async def async_setup_entry(
     """Set up button platform."""
     DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id] = {}
 
-    # Static default buttons
     default_buttons = [
         {
             "id": "act_climate_precondition_start",
@@ -76,27 +75,28 @@ async def async_setup_entry(
     ]
 
     entities = []
-    for btn_def in default_buttons:
-        entity = WiCANActionButtonEntity(config_entry, btn_def)
-        DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id][btn_def["id"]] = entity
-        entities.append(entity)
+    registered = DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id]
 
-    # Process catalog actions dynamically
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
-    if catalog:
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
-        if isinstance(entries, list):
-            for item in entries:
-                if isinstance(item, dict) and "action" in item.get("roles", ["action"]):
-                    act_id = item.get("id")
-                    if act_id and act_id not in DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id]:
-                        entity = WiCANActionButtonEntity(config_entry, item)
-                        DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id][act_id] = entity
-                        entities.append(entity)
+    catalog_entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if catalog else None
 
-    async_add_entities(entities)
+    if catalog_entries and isinstance(catalog_entries, list):
+        for item in catalog_entries:
+            if isinstance(item, dict) and "action" in item.get("roles", ["action"]):
+                act_id = item.get("id")
+                if act_id and act_id not in registered:
+                    entity = WiCANActionButtonEntity(config_entry, item)
+                    registered[act_id] = entity
+                    entities.append(entity)
+    else:
+        for btn_def in default_buttons:
+            entity = WiCANActionButtonEntity(config_entry, btn_def)
+            registered[btn_def["id"]] = entity
+            entities.append(entity)
 
-    # Connect catalog updates
+    if entities:
+        async_add_entities(entities)
+
     @callback
     def handle_catalog_update(webhook_id, data):
         if webhook_id != config_entry.runtime_data.webhook_id:
@@ -109,7 +109,6 @@ async def async_setup_entry(
             return
 
         new_entities = []
-        registered = DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id]
         for item in cat_entries:
             if isinstance(item, dict) and "action" in item.get("roles", ["action"]):
                 act_id = item.get("id")
@@ -136,8 +135,11 @@ class WiCANActionButtonEntity(WiCANEntity, ButtonEntity):
         raw_name = action_def.get("name", act_id)
         icon = action_def.get("icon", "mdi:car-cog")
 
+        # Strip act_ prefix for clean entity key if present
+        clean_key = act_id[4:] if act_id.startswith("act_") else act_id
+
         description = EntityDescription(
-            key=f"act_{act_id}",
+            key=clean_key,
             name=format_friendly_name(raw_name),
             icon=icon,
         )

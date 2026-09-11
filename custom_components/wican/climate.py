@@ -66,20 +66,23 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
         self._attr_target_temperature = 21.0
         self._attr_current_temperature = None
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
-        can_states = self.coordinator.data.get("can_states", {})
 
-        # Check for cabin temperature in status or CAN states
         if "t_cab" in status:
             try:
                 self._attr_current_temperature = float(status["t_cab"])
             except (ValueError, TypeError):
                 pass
 
-        # Check precondition / climate status condition if present in CAN states
-        # 0x476 payload check or status precondition_active
         if status.get("precondition_active") is True:
             self._attr_hvac_mode = HVACMode.HEAT_COOL
         elif status.get("precondition_active") is False:
@@ -90,11 +93,20 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
     @wican_exception_handler
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set HVAC mode."""
+        actions = self._get_catalog_actions()
         if hvac_mode == HVACMode.OFF:
-            await self.coordinator.async_trigger_precondition(False)
+            stop_def = next((a for a in actions if "stop" in a.get("id", "").lower() or a.get("state") is False), None)
+            if stop_def:
+                await self.coordinator.async_execute_action(stop_def)
+            else:
+                await self.coordinator.async_trigger_precondition(False)
             self._attr_hvac_mode = HVACMode.OFF
         else:
-            await self.coordinator.async_trigger_precondition(True)
+            start_def = next((a for a in actions if "start" in a.get("id", "").lower() or a.get("state") is True), None)
+            if start_def:
+                await self.coordinator.async_execute_action(start_def)
+            else:
+                await self.coordinator.async_trigger_precondition(True)
             self._attr_hvac_mode = HVACMode.HEAT_COOL
         self.async_write_ha_state()
 

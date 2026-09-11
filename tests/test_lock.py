@@ -14,6 +14,14 @@ async def test_lock_entity_creation_and_controls(
     init_integration: MockConfigEntry,
 ) -> None:
     """Test lock entity creation, lock and unlock actions."""
+    coordinator = init_integration.runtime_data.coordinator
+    catalog_data = [
+        {"id": "act_door_lock_all", "name": "Door Lock All", "type": "can_tx"},
+        {"id": "act_door_unlock_all", "name": "Door Unlock All", "type": "can_tx"},
+    ]
+    coordinator.handle_webhook_data({"cando_catalog": catalog_data})
+    await hass.async_block_till_done()
+
     state = hass.states.get("lock.wican_device_door_locks")
     assert state is not None
 

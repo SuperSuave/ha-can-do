@@ -14,6 +14,14 @@ async def test_select_entity_options(
     init_integration: MockConfigEntry,
 ) -> None:
     """Test select entity creation and option selection."""
+    coordinator = init_integration.runtime_data.coordinator
+    catalog_data = [
+        {"id": "act_interior_ambient_mood_lighting", "name": "Mood Light", "type": "can_tx", "options": [{"label": "Electric Blue"}]},
+        {"id": "act_driver_seat_heater_off", "name": "Driver Seat Heater", "type": "can_tx"},
+    ]
+    coordinator.handle_webhook_data({"cando_catalog": catalog_data})
+    await hass.async_block_till_done()
+
     state = hass.states.get("select.wican_device_mood_light_theme")
     assert state is not None
     assert "Electric Blue" in state.attributes["options"]

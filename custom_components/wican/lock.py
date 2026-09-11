@@ -49,6 +49,13 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_door_locks"
         self._attr_is_locked = True
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        if not catalog:
+            return []
+        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
+        return [item for item in entries if isinstance(item, dict)]
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         can_states = self.coordinator.data.get("can_states", {})
@@ -57,7 +64,6 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
         if "locked" in status:
             self._attr_is_locked = bool(status["locked"])
         elif "0x540" in can_states or "0X540" in can_states:
-            # Door lock state frame check
             state = can_states.get("0x540") or can_states.get("0X540")
             data_hex = state.get("data", "") if isinstance(state, dict) else str(state)
             if data_hex and not data_hex.startswith("00 00"):
@@ -68,14 +74,23 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
     @wican_exception_handler
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock vehicle doors."""
-        action_payload = {
-            "id": "act_door_lock_all",
-            "name": "Door Lock All",
-            "type": "can_tx",
-            "can_id": "0x540",
-            "steps": [{"payload": "01 00 00 00 00 00 00 00", "repeat": 2}],
-        }
-        success = await self.coordinator.async_execute_action(action_payload)
+        actions = self._get_catalog_actions()
+        lock_def = next((a for a in actions if "lock_all" in a.get("id", "").lower() or (a.get("id", "").lower().startswith("act_door_lock"))), None)
+
+        if not lock_def and actions:
+            _LOGGER.warning("Lock action not defined in catalog for this vehicle")
+            return
+
+        if not lock_def:
+            lock_def = {
+                "id": "act_door_lock_all",
+                "name": "Door Lock All",
+                "type": "can_tx",
+                "can_id": "0x540",
+                "steps": [{"payload": "01 00 00 00 00 00 00 00", "repeat": 2}],
+            }
+
+        success = await self.coordinator.async_execute_action(lock_def)
         if success:
             self._attr_is_locked = True
             self.async_write_ha_state()
@@ -83,14 +98,23 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
     @wican_exception_handler
     async def async_unlock(self, **kwargs: Any) -> None:
         """Unlock vehicle doors."""
-        action_payload = {
-            "id": "act_door_unlock_all",
-            "name": "Door Unlock All",
-            "type": "can_tx",
-            "can_id": "0x540",
-            "steps": [{"payload": "02 00 00 00 00 00 00 00", "repeat": 2}],
-        }
-        success = await self.coordinator.async_execute_action(action_payload)
+        actions = self._get_catalog_actions()
+        unlock_def = next((a for a in actions if "unlock" in a.get("id", "").lower()), None)
+
+        if not unlock_def and actions:
+            _LOGGER.warning("Unlock action not defined in catalog for this vehicle")
+            return
+
+        if not unlock_def:
+            unlock_def = {
+                "id": "act_door_unlock_all",
+                "name": "Door Unlock All",
+                "type": "can_tx",
+                "can_id": "0x540",
+                "steps": [{"payload": "02 00 00 00 00 00 00 00", "repeat": 2}],
+            }
+
+        success = await self.coordinator.async_execute_action(unlock_def)
         if success:
             self._attr_is_locked = False
             self.async_write_ha_state()
