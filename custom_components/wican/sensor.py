@@ -16,7 +16,7 @@ from homeassistant.helpers.entity import EntityCategory
 from .attributes import SENSOR_DESCRIPTIONS, WiCANSensorEntityDescription, get_sensor_attributes
 from .const import DOMAIN
 from .entity import WiCANEntity
-from .helpers import format_friendly_name
+from .helpers import extract_catalog_entries, format_friendly_name
 from .param_loader import (
     get_param_device_class,
     get_param_icon,
@@ -417,9 +417,9 @@ class WiCANCanCatalogSensorEntity(WiCANEntity, RestoreSensor):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from coordinator."""
         catalog = self.coordinator.data.get("cando_catalog")
-        if isinstance(catalog, (dict, list)):
-            length = len(catalog.get("entries", catalog)) if isinstance(catalog, dict) else len(catalog)
-            self._attr_native_value = length
+        if catalog is not None:
+            entries = extract_catalog_entries(catalog)
+            self._attr_native_value = len(entries)
             self._attr_extra_state_attributes = {"catalog": catalog}
             self.async_write_ha_state()
 

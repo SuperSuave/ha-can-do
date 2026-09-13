@@ -13,7 +13,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN
 from .entity import WiCANEntity
-from .helpers import wican_exception_handler
+from .helpers import extract_catalog_entries, wican_exception_handler
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -40,14 +40,9 @@ async def async_setup_entry(
     DYNAMIC_LOCK_ENTITIES[config_entry.entry_id] = {}
 
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
-    has_lock = False
-    matching = []
-
-    if catalog:
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
-        if isinstance(entries, list):
-            matching = [item for item in entries if isinstance(item, dict) and _is_lock_action(item)]
-            has_lock = len(matching) > 0
+    entries = extract_catalog_entries(catalog)
+    matching = [item for item in entries if _is_lock_action(item)]
+    has_lock = len(matching) > 0
 
     if has_lock:
         entity = WiCANVehicleLockEntity(config_entry, matching)
@@ -61,11 +56,9 @@ async def async_setup_entry(
         cat = data.get("cando_catalog")
         if not cat:
             return
-        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
-        if not isinstance(cat_entries, list):
-            return
+        cat_entries = extract_catalog_entries(cat)
 
-        matching = [item for item in cat_entries if isinstance(item, dict) and _is_lock_action(item)]
+        matching = [item for item in cat_entries if _is_lock_action(item)]
         registered = DYNAMIC_LOCK_ENTITIES[config_entry.entry_id]
         if matching:
             if "lock" in registered:
@@ -99,10 +92,7 @@ class WiCANVehicleLockEntity(WiCANEntity, LockEntity, RestoreEntity):
 
     def _get_catalog_actions(self) -> list[dict[str, Any]]:
         catalog = self.coordinator.data.get("cando_catalog")
-        if not catalog:
-            return []
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else []
-        return [item for item in entries if isinstance(item, dict)]
+        return extract_catalog_entries(catalog)
 
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""

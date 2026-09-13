@@ -27,6 +27,20 @@ _WiCANEntityT = TypeVar("_WiCANEntityT", bound="WiCANEntity")
 _P = TypeVar("_P")
 
 
+def extract_catalog_entries(catalog_data: Any) -> list[dict[str, Any]]:
+    """Extract list of catalog entry dicts from catalog JSON payload."""
+    if not catalog_data:
+        return []
+    if isinstance(catalog_data, list):
+        return [item for item in catalog_data if isinstance(item, dict)]
+    if isinstance(catalog_data, dict):
+        for key in ("commands", "entries", "rules", "actions", "conditions"):
+            val = catalog_data.get(key)
+            if isinstance(val, list):
+                return [item for item in val if isinstance(item, dict)]
+    return []
+
+
 def clean_mdns_host(host_or_url: str | None) -> str | None:
     """Remove trailing dot from mDNS host or URL string."""
     if not host_or_url:

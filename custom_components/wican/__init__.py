@@ -532,6 +532,7 @@ async def _async_register_webhook_on_device(  # noqa: C901, PLR0912, PLR0915
                             str(ep),
                             json=payload,
                             headers={"Content-Type": "application/json"},
+                            ssl=False,
                         )
 
                         if resp.status < 300:

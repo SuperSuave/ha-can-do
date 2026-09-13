@@ -93,7 +93,7 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             url = str(URL(base_url).with_path("/api/can_states"))
             session = async_get_clientsession(self.hass)
             async with asyncio.timeout(10):
-                response = await session.get(url)
+                response = await session.get(url, ssl=False)
                 if response.status == 200:
                     data = await response.json()
                     if isinstance(data, dict):
@@ -262,7 +262,7 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             url = str(URL(base_url).with_path("/test_can_do_action"))
             session = async_get_clientsession(self.hass)
             async with asyncio.timeout(10):
-                response = await session.post(url, json=action_payload)
+                response = await session.post(url, json=action_payload, ssl=False)
                 if response.status in (200, 201, 204):
                     _LOGGER.info("Successfully executed CAN action on WiCAN device")
                     return True
@@ -288,7 +288,7 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if target_temp is not None:
                 payload["target_temp"] = target_temp
             async with asyncio.timeout(10):
-                response = await session.post(url, json=payload)
+                response = await session.post(url, json=payload, ssl=False)
                 if response.status in (200, 201, 204):
                     _LOGGER.info("Successfully toggled precondition on WiCAN device")
                     return True

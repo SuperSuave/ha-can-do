@@ -15,6 +15,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .attributes import BINARY_SENSOR_DESCRIPTIONS, WiCANBinarySensorEntityDescription, get_sensor_attributes
 from .const import DOMAIN
 from .entity import WiCANEntity
+from .helpers import extract_catalog_entries
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -58,15 +59,13 @@ async def async_setup_entry(
     created_cond_ids: set[str] = set()
 
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
-    if catalog:
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
-        if isinstance(entries, list):
-            for item in entries:
-                if _is_condition_entry(item):
-                    cond_id = item.get("id")
-                    if cond_id and cond_id not in created_cond_ids:
-                        created_cond_ids.add(cond_id)
-                        entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
+    entries = extract_catalog_entries(catalog)
+    for item in entries:
+        if _is_condition_entry(item):
+            cond_id = item.get("id")
+            if cond_id and cond_id not in created_cond_ids:
+                created_cond_ids.add(cond_id)
+                entities.append(WiCANCanConditionBinarySensorEntity(config_entry, item))
 
     async_add_entities(entities)
 
@@ -77,9 +76,7 @@ async def async_setup_entry(
         cat = data.get("cando_catalog")
         if not cat:
             return
-        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
-        if not isinstance(cat_entries, list):
-            return
+        cat_entries = extract_catalog_entries(cat)
 
         new_entities = []
         for item in cat_entries:

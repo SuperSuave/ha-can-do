@@ -13,7 +13,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN
 from .entity import WiCANEntity
-from .helpers import format_friendly_name, wican_exception_handler
+from .helpers import extract_catalog_entries, format_friendly_name, wican_exception_handler
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -35,23 +35,21 @@ async def async_setup_entry(
     DYNAMIC_SELECT_ENTITIES[config_entry.entry_id] = {}
 
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
+    entries = extract_catalog_entries(catalog)
     entities = []
 
-    if catalog:
-        entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog
-        if isinstance(entries, list):
-            mood_match = [item for item in entries if isinstance(item, dict) and ("ambient" in item.get("id", "") or "mood" in item.get("id", "")) and "options" in item]
-            seat_match = [item for item in entries if isinstance(item, dict) and "seat_heater" in item.get("id", "")]
+    mood_match = [item for item in entries if ("ambient" in item.get("id", "") or "mood" in item.get("id", "")) and "options" in item]
+    seat_match = [item for item in entries if "seat_heater" in item.get("id", "")]
 
-            registered = DYNAMIC_SELECT_ENTITIES[config_entry.entry_id]
-            if mood_match:
-                e = WiCANAmbientMoodLightSelectEntity(config_entry, mood_match[0])
-                registered["mood"] = e
-                entities.append(e)
-            if seat_match:
-                e = WiCANDriverSeatHeaterSelectEntity(config_entry, seat_match)
-                registered["seat"] = e
-                entities.append(e)
+    registered = DYNAMIC_SELECT_ENTITIES[config_entry.entry_id]
+    if mood_match:
+        e = WiCANAmbientMoodLightSelectEntity(config_entry, mood_match[0])
+        registered["mood"] = e
+        entities.append(e)
+    if seat_match:
+        e = WiCANDriverSeatHeaterSelectEntity(config_entry, seat_match)
+        registered["seat"] = e
+        entities.append(e)
 
     if entities:
         async_add_entities(entities)
@@ -63,12 +61,10 @@ async def async_setup_entry(
         cat = data.get("cando_catalog")
         if not cat:
             return
-        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
-        if not isinstance(cat_entries, list):
-            return
+        cat_entries = extract_catalog_entries(cat)
 
-        mood_match = [item for item in cat_entries if isinstance(item, dict) and ("ambient" in item.get("id", "") or "mood" in item.get("id", "")) and "options" in item]
-        seat_match = [item for item in cat_entries if isinstance(item, dict) and "seat_heater" in item.get("id", "")]
+        mood_match = [item for item in cat_entries if ("ambient" in item.get("id", "") or "mood" in item.get("id", "")) and "options" in item]
+        seat_match = [item for item in cat_entries if "seat_heater" in item.get("id", "")]
 
         registered = DYNAMIC_SELECT_ENTITIES[config_entry.entry_id]
         new_entities = []

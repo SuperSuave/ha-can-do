@@ -12,7 +12,7 @@ from homeassistant.helpers.entity import EntityDescription
 
 from .const import DOMAIN
 from .entity import WiCANEntity
-from .helpers import format_friendly_name, wican_exception_handler
+from .helpers import extract_catalog_entries, format_friendly_name, wican_exception_handler
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -47,16 +47,15 @@ async def async_setup_entry(
     registered = DYNAMIC_BUTTON_ENTITIES[config_entry.entry_id]
 
     catalog = config_entry.runtime_data.coordinator.data.get("cando_catalog")
-    catalog_entries = catalog.get("entries", catalog) if isinstance(catalog, dict) else catalog if isinstance(catalog, list) else None
+    catalog_entries = extract_catalog_entries(catalog)
 
-    if catalog_entries and isinstance(catalog_entries, list):
-        for item in catalog_entries:
-            if _is_action_entry(item):
-                act_id = item.get("id")
-                if act_id and act_id not in registered:
-                    entity = WiCANActionButtonEntity(config_entry, item)
-                    registered[act_id] = entity
-                    entities.append(entity)
+    for item in catalog_entries:
+        if _is_action_entry(item):
+            act_id = item.get("id")
+            if act_id and act_id not in registered:
+                entity = WiCANActionButtonEntity(config_entry, item)
+                registered[act_id] = entity
+                entities.append(entity)
 
     if entities:
         async_add_entities(entities)
@@ -68,9 +67,7 @@ async def async_setup_entry(
         cat = data.get("cando_catalog")
         if not cat:
             return
-        cat_entries = cat.get("entries", cat) if isinstance(cat, dict) else cat
-        if not isinstance(cat_entries, list):
-            return
+        cat_entries = extract_catalog_entries(cat)
 
         new_entities = []
         for item in cat_entries:
