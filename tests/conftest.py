@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
+import aiohttp.resolver
 import pytest
 
 from homeassistant.const import CONF_WEBHOOK_ID
@@ -22,7 +23,8 @@ pytest_plugins = "pytest_homeassistant_custom_component"
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations for all tests."""
-    yield
+    with patch("aiohttp.resolver.DefaultResolver", aiohttp.resolver.ThreadedResolver):
+        yield
 
 
 @pytest.fixture
@@ -94,6 +96,7 @@ async def init_integration(
     with (
         patch(
             "custom_components.wican._async_register_webhook_on_device",
+            new_callable=AsyncMock,
             return_value=True,
         ),
     ):

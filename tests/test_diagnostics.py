@@ -65,7 +65,8 @@ async def test_diagnostics_includes_coordinator_status(
 
     # Check coordinator info
     assert diagnostics["coordinator"]["last_update_success"] is True
-    assert diagnostics["coordinator"]["data_keys"] == ["status", "pids"]
+    assert "status" in diagnostics["coordinator"]["data_keys"]
+    assert "pids" in diagnostics["coordinator"]["data_keys"]
 
 
 async def test_diagnostics_includes_entity_states(

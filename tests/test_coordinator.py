@@ -43,8 +43,8 @@ async def test_coordinator_first_refresh(
 
     await coordinator.async_config_entry_first_refresh()
 
-    # Should succeed with empty data (push-based integration)
-    assert coordinator.data == {}
+    # Should succeed with catalog initialized
+    assert "cando_catalog" in coordinator.data
     assert coordinator.last_update_success is True
 
 
@@ -61,7 +61,7 @@ async def test_coordinator_handle_webhook_data(
     # Simulate webhook data
     coordinator.handle_webhook_data(mock_webhook_data)
 
-    assert coordinator.data == mock_webhook_data
+    assert mock_webhook_data.items() <= coordinator.data.items()
     assert coordinator.last_update_success is True
 
 
@@ -77,7 +77,7 @@ async def test_coordinator_device_identity_validation_success(
     # Device ID matches config entry
     coordinator.handle_webhook_data(mock_webhook_data)
 
-    assert coordinator.data == mock_webhook_data
+    assert mock_webhook_data.items() <= coordinator.data.items()
 
 
 async def test_coordinator_device_identity_validation_fails(
@@ -113,7 +113,7 @@ async def test_coordinator_device_identity_validation_no_device_id(
     # Should not raise exception (backward compatibility)
     coordinator.handle_webhook_data(no_device_id_data)
 
-    assert coordinator.data == no_device_id_data
+    assert no_device_id_data.items() <= coordinator.data.items()
 
 
 async def test_coordinator_normalize_sensor_value_voltage(

@@ -32,6 +32,9 @@ DYNAMIC_CLIMATE_ENTITIES: dict[str, dict[str, WiCANVehicleClimateEntity]] = {}
 
 
 def _is_climate_action(item: dict) -> bool:
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "climate":
+        return True
     act_id = str(item.get("id", "")).lower()
     act_type = str(item.get("type", "")).lower()
     return "precondition" in act_id or "climate" in act_id or "hvac" in act_id or act_type == "precondition"
@@ -108,6 +111,10 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
         self._attr_target_temperature = 21.0
         self._attr_current_temperature = None
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        return extract_catalog_entries(catalog)
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -128,8 +135,9 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
     @wican_exception_handler
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set HVAC mode."""
+        actions = self._get_catalog_actions()
         if hvac_mode == HVACMode.OFF:
-            stop_def = next((a for a in self._action_defs if "stop" in a.get("id", "").lower() or a.get("state") is False), None)
+            stop_def = next((a for a in actions if "stop" in a.get("id", "").lower() or a.get("state") is False), None)
             if stop_def:
                 success = await self.coordinator.async_execute_action(stop_def)
             else:
@@ -138,7 +146,7 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
                 self._attr_hvac_mode = HVACMode.OFF
                 self.async_write_ha_state()
         else:
-            start_def = next((a for a in self._action_defs if "start" in a.get("id", "").lower() or a.get("state") is True), None)
+            start_def = next((a for a in actions if "start" in a.get("id", "").lower() or a.get("state") is True), None)
             if start_def:
                 success = await self.coordinator.async_execute_action(start_def)
             else:
@@ -151,7 +159,8 @@ class WiCANVehicleClimateEntity(WiCANEntity, ClimateEntity, RestoreEntity):
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set target temperature."""
         if (temp := kwargs.get(ATTR_TEMPERATURE)) is not None:
-            temp_def = next((a for a in self._action_defs if "temp" in a.get("id", "").lower()), None)
+            actions = self._get_catalog_actions()
+            temp_def = next((a for a in actions if "temp" in a.get("id", "").lower()), None)
             if temp_def:
                 action_payload = dict(temp_def)
                 action_payload["target_temp"] = temp

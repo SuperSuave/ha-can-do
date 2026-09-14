@@ -28,6 +28,9 @@ DYNAMIC_BUTTON_ENTITIES: dict[str, dict[str, WiCANActionButtonEntity]] = {}
 def _is_action_entry(item: dict) -> bool:
     if not isinstance(item, dict):
         return False
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "button":
+        return True
     roles = item.get("roles")
     if roles and isinstance(roles, list):
         return "action" in roles

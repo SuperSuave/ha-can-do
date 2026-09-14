@@ -27,8 +27,11 @@ DYNAMIC_SWITCH_ENTITIES: dict[str, dict[str, WiCANSteeringWheelHeaterSwitchEntit
 
 
 def _is_steering_wheel_heater_action(item: dict) -> bool:
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "switch":
+        return True
     act_id = str(item.get("id", "")).lower()
-    return "steering_wheel_heater" in act_id or "steering_heater" in act_id
+    return "steering_wheel_heater" in act_id or "steering_heater" in act_id or "heater" in act_id
 
 
 async def async_setup_entry(

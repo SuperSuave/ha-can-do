@@ -37,6 +37,9 @@ def is_true_status(value: str) -> bool:
 def _is_condition_entry(item: dict) -> bool:
     if not isinstance(item, dict):
         return False
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "binary_sensor":
+        return True
     roles = item.get("roles")
     if roles and isinstance(roles, list):
         return "condition" in roles

@@ -31,8 +31,11 @@ DYNAMIC_COVER_ENTITIES: dict[str, dict[str, WiCANChargePortCoverEntity]] = {}
 
 
 def _is_charge_port_action(item: dict) -> bool:
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain in ("cover", "door"):
+        return True
     act_id = str(item.get("id", "")).lower()
-    return "charge_port" in act_id
+    return "charge_port" in act_id or "tailgate" in act_id or "trunk" in act_id or "window" in act_id or "sunroof" in act_id
 
 
 async def async_setup_entry(
@@ -111,7 +114,7 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open charge port door."""
         actions = self._get_catalog_actions()
-        open_def = next((a for a in actions if "open" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
+        open_def = next((a for a in actions if "open" in a.get("id", "").lower()), None)
 
         if not open_def:
             _LOGGER.warning("Charge port open action not defined in catalog for this vehicle")
@@ -126,7 +129,7 @@ class WiCANChargePortCoverEntity(WiCANEntity, CoverEntity, RestoreEntity):
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close charge port door."""
         actions = self._get_catalog_actions()
-        close_def = next((a for a in actions if "close" in a.get("id", "").lower() and "charge_port" in a.get("id", "").lower()), None)
+        close_def = next((a for a in actions if "close" in a.get("id", "").lower()), None)
 
         if not close_def:
             _LOGGER.warning("Charge port close action not defined in catalog for this vehicle")

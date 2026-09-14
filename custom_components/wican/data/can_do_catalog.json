@@ -427,7 +427,8 @@
       "to_payload": "* * * * * 1*",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "sw_mode",
@@ -442,7 +443,8 @@
       "to_payload": "* * 4*",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "sw_speak",
@@ -457,7 +459,8 @@
       "to_payload": "* * *1",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "sw_call",
@@ -472,7 +475,8 @@
       "to_payload": "* * *4",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "sw_volume",
@@ -508,7 +512,8 @@
           "from_payload": "* * * * *0",
           "to_payload": "* * * * *4"
         }
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "sw_seek",
@@ -539,7 +544,8 @@
           "from_payload": "* * * *0",
           "to_payload": "* * * *4"
         }
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "sw_menu",
@@ -575,7 +581,8 @@
           "to_payload": "* * * * * * 1*",
           "default": true
         }
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "avn_star",
@@ -590,7 +597,8 @@
       "to_payload": "* *4",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "ev6_mode_strip",
@@ -606,7 +614,8 @@
       "to_payload": "* * * 5*",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "camera_btn",
@@ -622,7 +631,8 @@
       "to_payload": "* * 52",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "cluster_brightness",
@@ -648,7 +658,8 @@
           "from_payload": "* * * * * * * 0A",
           "to_payload": "* * * * * * * 8A"
         }
-      ]
+      ],
+      "ha_domain": "sensor"
     },
     {
       "id": "heated_wheel_btn",
@@ -664,7 +675,8 @@
       "to_payload": "* * 01",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "climate_sync_toggle",
@@ -679,7 +691,8 @@
       "to_payload": "* * * 0F",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "climate_driver_only",
@@ -694,7 +707,8 @@
       "to_payload": "* * * * 0F",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "climate_rear_defog",
@@ -709,7 +723,8 @@
       "to_payload": "* * * * 1*",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "switch"
     },
     {
       "id": "climate_temp_status",
@@ -724,7 +739,8 @@
       "to_payload": "",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "climate_fan_active",
@@ -739,7 +755,8 @@
       "to_payload": "* * * 2*",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "climate_recirc_on",
@@ -754,7 +771,8 @@
       "to_payload": "* * * * 4*",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "switch"
     },
     {
       "id": "car_ready_state",
@@ -769,7 +787,8 @@
       "to_payload": "*4",
       "roles": [
         "trigger"
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "doors_status",
@@ -815,7 +834,8 @@
           "to_payload": "*0",
           "match_payload": "* * * *0 * * *"
         }
-      ]
+      ],
+      "ha_domain": "cover"
     },
     {
       "id": "trunk",
@@ -844,7 +864,8 @@
           "to_payload": "* * * 00",
           "match_payload": "* * * 00 * * *"
         }
-      ]
+      ],
+      "ha_domain": "cover"
     },
     {
       "id": "charge_port",
@@ -873,7 +894,8 @@
           "to_payload": "* * * * 00",
           "match_payload": "* * * * 00 * * *"
         }
-      ]
+      ],
+      "ha_domain": "cover"
     },
     {
       "id": "hood",
@@ -902,7 +924,8 @@
           "to_payload": "* * 0*",
           "match_payload": "* * 0* * * * * *"
         }
-      ]
+      ],
+      "ha_domain": "cover"
     },
     {
       "id": "sunroof",
@@ -932,7 +955,8 @@
           "to_payload": "* * * * * * * 0*",
           "match_payload": "* * * * * * * 0*"
         }
-      ]
+      ],
+      "ha_domain": "cover"
     },
     {
       "id": "hazard_lights",
@@ -961,7 +985,8 @@
           "to_payload": "* * * * 0*",
           "match_payload": "* * * * 0* * * *"
         }
-      ]
+      ],
+      "ha_domain": "light"
     },
     {
       "id": "wipers",
@@ -990,7 +1015,8 @@
           "to_payload": "* * * 0*",
           "match_payload": "* * * 0* * * * *"
         }
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "brake_pedal",
@@ -1019,7 +1045,8 @@
           "to_payload": "* * * * * * 00",
           "match_payload": "* * * * * * 00 *"
         }
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "power_state",
@@ -1048,7 +1075,8 @@
           "to_payload": "* * * * * * * FF",
           "match_payload": "* * * * * * * FF"
         }
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "doors_lock_state",
@@ -1077,7 +1105,8 @@
           "to_payload": "* * 0*",
           "match_payload": "* * 0* * * * * *"
         }
-      ]
+      ],
+      "ha_domain": "lock"
     },
     {
       "id": "seatbelts_status",
@@ -1123,7 +1152,8 @@
           "to_payload": "* * * * 0*",
           "match_payload": "* * * * 00 * * *"
         }
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "drivers_seat_comfort",
@@ -1269,7 +1299,8 @@
             }
           ]
         }
-      ]
+      ],
+      "ha_domain": "select"
     },
     {
       "id": "passengers_seat_comfort",
@@ -1415,7 +1446,8 @@
             }
           ]
         }
-      ]
+      ],
+      "ha_domain": "select"
     },
     {
       "id": "heated_steering_wheel_toggle",
@@ -1442,7 +1474,8 @@
       "category": "Seats & Steering Wheel Comfort",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "switch"
     },
     {
       "id": "battery_preconditioning",
@@ -1482,7 +1515,8 @@
           "precon_mode": "cancel",
           "precon_press": "short"
         }
-      ]
+      ],
+      "ha_domain": "climate"
     },
     {
       "id": "cluster_telemetry_popup",
@@ -1525,7 +1559,8 @@
           "label": "Sport Mode Active Toast",
           "popup_message": "SPORT MODE ACTIVE"
         }
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "ev_charge_limits",
@@ -1800,7 +1835,8 @@
             }
           ]
         }
-      ]
+      ],
+      "ha_domain": "select"
     },
     {
       "id": "remote_climate_start____seats___wheel_",
@@ -1844,7 +1880,8 @@
       "category": "Cabin Climate Control",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "climate"
     },
     {
       "id": "deep_sleep_network_wake_pulse",
@@ -1873,7 +1910,8 @@
       "category": "Cabin Climate Control",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "set_target_cabin_temp",
@@ -1894,7 +1932,8 @@
       "category": "Cabin Climate Control",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "climate"
     },
     {
       "id": "sync_mode_toggle",
@@ -1933,7 +1972,8 @@
       "category": "Cabin Climate Control",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "switch"
     },
     {
       "id": "driver_only_mode",
@@ -1972,7 +2012,8 @@
       "category": "Cabin Climate Control",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "switch"
     },
     {
       "id": "active_sound_design__asd__profile",
@@ -2022,7 +2063,8 @@
       "category": "Vehicle Actuators & Features",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "select"
     },
     {
       "id": "surround_view_camera",
@@ -2049,7 +2091,8 @@
       "category": "Vehicle Actuators & Features",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "keepalive___wakeup_ping",
@@ -2071,7 +2114,8 @@
       "category": "Vehicle Actuators & Features",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "multi_frame_burst_sequence__x3_",
@@ -2097,7 +2141,8 @@
       "category": "Vehicle Actuators & Features",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "home_assistant_webhook_event",
@@ -2110,7 +2155,8 @@
       "category": "Home Assistant & Cloud",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "mqtt_json_event_alert",
@@ -2124,7 +2170,8 @@
       "category": "Home Assistant & Cloud",
       "roles": [
         "action"
-      ]
+      ],
+      "ha_domain": "button"
     },
     {
       "id": "ambient_mood_lighting",
@@ -2191,7 +2238,8 @@
       "roles": [
         "action",
         "trigger"
-      ]
+      ],
+      "ha_domain": "light"
     },
     {
       "id": "cond_speed_zero",
@@ -2203,7 +2251,8 @@
       "category": "Vehicle State & Safety",
       "roles": [
         "condition"
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "selected_gear",
@@ -2241,7 +2290,8 @@
           "label": "Drive (D)",
           "match_payload": "* * 05 * * * * *"
         }
-      ]
+      ],
+      "ha_domain": "sensor"
     },
     {
       "id": "cond_doors_closed",
@@ -2256,7 +2306,8 @@
       "roles": [
         "condition",
         "trigger"
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "cond_climate_off",
@@ -2270,7 +2321,8 @@
       "category": "Vehicle State & Safety",
       "roles": [
         "condition"
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "cond_charging",
@@ -2285,7 +2337,8 @@
       "roles": [
         "condition",
         "trigger"
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "cond_ambient_temperature",
@@ -2318,7 +2371,8 @@
           "label": "Warm (> 25C / 77F)",
           "expression": "[B3] > 65"
         }
-      ]
+      ],
+      "ha_domain": "sensor"
     },
     {
       "id": "cond_hv_battery_soc",
@@ -2351,7 +2405,8 @@
           "label": "Low Battery (SOC < 20%)",
           "expression": "[B7] < 40"
         }
-      ]
+      ],
+      "ha_domain": "sensor"
     },
     {
       "id": "cond_aux_12v_battery",
@@ -2381,7 +2436,8 @@
           "voltage_val": "12.0",
           "voltage_dir": "below"
         }
-      ]
+      ],
+      "ha_domain": "sensor"
     },
     {
       "id": "cond_day_of_week",
@@ -2418,7 +2474,8 @@
             "sun"
           ]
         }
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     },
     {
       "id": "cond_time_window",
@@ -2448,7 +2505,8 @@
           "start_time": "19:00",
           "end_time": "07:00"
         }
-      ]
+      ],
+      "ha_domain": "binary_sensor"
     }
   ]
 }

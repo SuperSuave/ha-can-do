@@ -26,6 +26,20 @@ PARALLEL_UPDATES = 0
 DYNAMIC_SELECT_ENTITIES: dict[str, dict[str, Any]] = {}
 
 
+def _is_mood_select(item: dict) -> bool:
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "select" and "mood" in str(item.get("id", "")).lower():
+        return True
+    return ("ambient" in str(item.get("id", "")).lower() or "mood" in str(item.get("id", "")).lower()) and "options" in item
+
+
+def _is_seat_select(item: dict) -> bool:
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "select" and "seat" in str(item.get("id", "")).lower():
+        return True
+    return "seat_heater" in str(item.get("id", "")).lower() or "seat" in str(item.get("id", "")).lower()
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: WiCANConfigEntry,
@@ -38,8 +52,8 @@ async def async_setup_entry(
     entries = extract_catalog_entries(catalog)
     entities = []
 
-    mood_match = [item for item in entries if ("ambient" in item.get("id", "") or "mood" in item.get("id", "")) and "options" in item]
-    seat_match = [item for item in entries if "seat_heater" in item.get("id", "")]
+    mood_match = [item for item in entries if _is_mood_select(item)]
+    seat_match = [item for item in entries if _is_seat_select(item)]
 
     registered = DYNAMIC_SELECT_ENTITIES[config_entry.entry_id]
     if mood_match:
@@ -63,8 +77,8 @@ async def async_setup_entry(
             return
         cat_entries = extract_catalog_entries(cat)
 
-        mood_match = [item for item in cat_entries if ("ambient" in item.get("id", "") or "mood" in item.get("id", "")) and "options" in item]
-        seat_match = [item for item in cat_entries if "seat_heater" in item.get("id", "")]
+        mood_match = [item for item in cat_entries if _is_mood_select(item)]
+        seat_match = [item for item in cat_entries if _is_seat_select(item)]
 
         registered = DYNAMIC_SELECT_ENTITIES[config_entry.entry_id]
         new_entities = []
@@ -117,6 +131,10 @@ class WiCANAmbientMoodLightSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         self._attr_options = options_list or []
         self._attr_current_option = self._attr_options[0] if self._attr_options else None
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        return extract_catalog_entries(catalog)
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -130,17 +148,20 @@ class WiCANAmbientMoodLightSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         if option not in self._attr_options:
             raise ValueError(f"Invalid option: {option}")
 
-        matched_opt = None
-        if self._action_def and "options" in self._action_def:
-            matched_opt = next((o for o in self._action_def["options"] if isinstance(o, dict) and o.get("label") == option), None)
+        actions = self._get_catalog_actions()
+        action_def = next((a for a in actions if _is_mood_select(a)), self._action_def)
 
-        if not matched_opt and not self._action_def:
+        matched_opt = None
+        if action_def and "options" in action_def:
+            matched_opt = next((o for o in action_def["options"] if isinstance(o, dict) and o.get("label") == option), None)
+
+        if not matched_opt and not action_def:
             _LOGGER.warning("No ambient light theme action defined in catalog for this vehicle")
             return
 
         payload = matched_opt.get("payload") if matched_opt else None
 
-        action_payload = dict(self._action_def)
+        action_payload = dict(action_def)
         if payload:
             action_payload["steps"] = [{"payload": payload, "repeat": 2}]
 
@@ -176,6 +197,10 @@ class WiCANDriverSeatHeaterSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         self._attr_unique_id = f"{config_entry.entry_id}_driver_seat_heater_level"
         self._attr_current_option = "OFF"
 
+    def _get_catalog_actions(self) -> list[dict[str, Any]]:
+        catalog = self.coordinator.data.get("cando_catalog")
+        return extract_catalog_entries(catalog)
+
     def _handle_coordinator_update(self) -> None:
         """Handle coordinator update."""
         status = self.coordinator.data.get("status", {})
@@ -189,7 +214,8 @@ class WiCANDriverSeatHeaterSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         if option not in self._attr_options:
             raise ValueError(f"Invalid option: {option}")
 
-        action_def = next((a for a in self._action_defs if option.lower() in a.get("id", "").lower()), None)
+        actions = self._get_catalog_actions()
+        action_def = next((a for a in actions if option.lower() in a.get("id", "").lower()), None)
         if not action_def:
             _LOGGER.warning("No seat heater action defined in catalog for this vehicle")
             return

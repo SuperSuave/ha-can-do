@@ -27,8 +27,11 @@ DYNAMIC_LIGHT_ENTITIES: dict[str, dict[str, WiCANAmbientLightEntity]] = {}
 
 
 def _is_ambient_light_action(item: dict) -> bool:
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "light":
+        return True
     act_id = str(item.get("id", "")).lower()
-    return "ambient" in act_id or "mood" in act_id
+    return "ambient" in act_id or "mood" in act_id or "lighting" in act_id
 
 
 async def async_setup_entry(

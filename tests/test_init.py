@@ -91,7 +91,7 @@ async def test_webhook_post(
 
     # Verify coordinator has the data
     coordinator = entry.runtime_data.coordinator
-    assert coordinator.data == mock_webhook_data
+    assert mock_webhook_data.items() <= coordinator.data.items()
 
 
 async def test_webhook_device_identity_mismatch(

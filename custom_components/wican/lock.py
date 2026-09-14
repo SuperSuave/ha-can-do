@@ -27,6 +27,9 @@ DYNAMIC_LOCK_ENTITIES: dict[str, dict[str, WiCANVehicleLockEntity]] = {}
 
 
 def _is_lock_action(item: dict) -> bool:
+    ha_domain = str(item.get("ha_domain", "")).lower()
+    if ha_domain == "lock":
+        return True
     act_id = str(item.get("id", "")).lower()
     return "lock" in act_id or "unlock" in act_id
 
