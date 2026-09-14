@@ -13,6 +13,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from yarl import URL
 
+from .catalog_loader import get_catalog
 from .const import DOMAIN, WICAN_DATA_UPDATE_INTERVAL
 
 if TYPE_CHECKING:
@@ -53,6 +54,9 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         This is a push-based integration, but we also poll /api/can_states
         and /load_cando_catalog when available.
         """
+        if "cando_catalog" not in self._data:
+            self._data["cando_catalog"] = get_catalog()
+
         can_states = await self.async_fetch_can_states()
         if can_states is not None:
             self._data["can_states"] = can_states
@@ -104,23 +108,23 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return None
 
     async def async_fetch_cando_catalog(self) -> dict[str, Any] | list[Any] | None:
-        """Fetch CAN Do catalog from /load_cando_catalog endpoint."""
+        """Fetch CAN Do catalog from /load_cando_catalog endpoint or fallback to GitHub catalog."""
         base_url = self._get_device_base_url()
-        if not base_url:
-            return None
+        if base_url:
+            try:
+                url = str(URL(base_url).with_path("/load_cando_catalog"))
+                session = async_get_clientsession(self.hass)
+                async with asyncio.timeout(5):
+                    response = await session.get(url, ssl=False)
+                    if response.status == 200:
+                        data = await response.json()
+                        if data:
+                            return data
+            except Exception as err:
+                _LOGGER.debug("Failed to fetch CAN Do catalog from %s: %s", base_url, err)
 
-        try:
-            url = str(URL(base_url).with_path("/load_cando_catalog"))
-            session = async_get_clientsession(self.hass)
-            async with asyncio.timeout(10):
-                response = await session.get(url)
-                if response.status == 200:
-                    data = await response.json()
-                    return data
-        except Exception as err:
-            _LOGGER.debug("Failed to fetch CAN Do catalog from %s: %s", base_url, err)
-
-        return None
+        # Fallback to GitHub / bundled catalog if device fetch fails or times out
+        return get_catalog()
 
     async def async_config_entry_first_refresh(self) -> None:
         """Perform first refresh of the coordinator.

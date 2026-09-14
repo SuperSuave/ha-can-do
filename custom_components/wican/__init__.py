@@ -36,6 +36,7 @@ from .exceptions import WiCANWebhookError
 from .github_releases import GitHubReleasesCoordinator
 from .helpers import resolve_device_webhook_urls
 from .models import WiCANRuntimeData
+from .catalog_loader import async_update_catalog_from_github
 from .param_loader import async_update_params_from_github
 
 if TYPE_CHECKING:
@@ -201,14 +202,15 @@ async def async_setup_entry(  # noqa: C901, PLR0915
     entry: WiCANConfigEntry,
 ) -> bool:
     """Set up WiCAN from a config entry."""
-    # Update params.json from GitHub (non-blocking, best-effort)
+    # Update params.json and can_do_catalog.json from GitHub (non-blocking, best-effort)
     try:
         session = async_get_clientsession(hass)
         updated = await async_update_params_from_github(session)
         if updated:
             _LOGGER.info("Updated PID parameter definitions from GitHub")
+        await async_update_catalog_from_github(session)
     except Exception as err:
-        _LOGGER.debug("Could not update params from GitHub: %s", err)
+        _LOGGER.debug("Could not update params/catalog from GitHub: %s", err)
         # Continue with bundled/cached version
 
     # Ensure webhook_id exists (older entries may lack it); generate if missing

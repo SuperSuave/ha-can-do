@@ -297,6 +297,10 @@ async def test_sensor_state_restoration_with_normalization(hass: HomeAssistant) 
     state = hass.states.get("sensor.wican_test_batt_voltage")
     assert state is not None
 
+
+
+
+
 async def test_can_states_and_catalog_sensors(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
