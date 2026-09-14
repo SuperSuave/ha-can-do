@@ -56,6 +56,7 @@ PLATFORMS: list[Platform] = [
     Platform.BUTTON,
     Platform.SWITCH,
     Platform.SELECT,
+    Platform.EVENT,
 ]
 
 # Type alias for config entry with runtime data
