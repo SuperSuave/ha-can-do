@@ -2,7 +2,7 @@
 config/
 
 #PY Cache
-custom_components/wican/__pycache__/*
+custom_components/can_do/__pycache__/*
 
 # Test and Python caches
 tests/__pycache__/*

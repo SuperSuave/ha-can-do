@@ -1,11 +1,11 @@
 # Home Assistant Integration Quality Scale
 # Documentation: https://developers.home-assistant.io/docs/integration_quality_scale_index/
 
-# WiCAN Integration Quality Scale Assessment
+# CAN Do Integration Quality Scale Assessment
 # Current Target: Silver (preparing for core submission)
 
-integration: wican
-domain: wican
+integration: can_do
+domain: can_do
 version: "2.0.0"
 assessed_date: "2025-12-06"
 
@@ -33,12 +33,12 @@ bronze:
     - requirement: "Config flow for user-friendly setup"
       status: compliant
       notes: "Full config flow with user and zeroconf discovery flows"
-      evidence: "custom_components/wican/config_flow.py"
+      evidence: "custom_components/can_do/config_flow.py"
       
     - requirement: "Unique IDs for entities"
       status: compliant
       notes: "MAC-based unique IDs for stable entity identification"
-      evidence: "custom_components/wican/entity.py:58-59"
+      evidence: "custom_components/can_do/entity.py:58-59"
       
     - requirement: "No blocking I/O in event loop"
       status: compliant
@@ -76,22 +76,22 @@ silver:
     - requirement: "Diagnostics support"
       status: compliant
       notes: "Comprehensive diagnostics with sensitive data redaction"
-      evidence: "custom_components/wican/diagnostics.py"
+      evidence: "custom_components/can_do/diagnostics.py"
       
     - requirement: "Configuration via config entries (not YAML)"
       status: compliant
       notes: "Full config entry support with config flow and options flow"
-      evidence: "custom_components/wican/config_flow.py"
+      evidence: "custom_components/can_do/config_flow.py"
       
     - requirement: "Translation strings for all user-facing text"
       status: compliant
       notes: "Complete translations including entity names, config flow, and errors"
-      evidence: "custom_components/wican/translations/en.json"
+      evidence: "custom_components/can_do/translations/en.json"
       
     - requirement: "Device registry integration"
       status: compliant
       notes: "Proper device info with identifiers, connections, manufacturer, model, sw_version"
-      evidence: "custom_components/wican/entity.py:62-78"
+      evidence: "custom_components/can_do/entity.py:62-78"
       
     - requirement: "Entity registry integration"
       status: compliant
@@ -100,18 +100,18 @@ silver:
       
     - requirement: "DataUpdateCoordinator for state management"
       status: compliant
-      notes: "WiCANDataUpdateCoordinator with push-based updates"
-      evidence: "custom_components/wican/coordinator.py"
+      notes: "CAN DoDataUpdateCoordinator with push-based updates"
+      evidence: "custom_components/can_do/coordinator.py"
       
     - requirement: "Proper error handling and logging"
       status: compliant
       notes: "Custom exception hierarchy, proper logging with lazy evaluation"
-      evidence: "custom_components/wican/exceptions.py, all logging uses %s formatting"
+      evidence: "custom_components/can_do/exceptions.py, all logging uses %s formatting"
       
     - requirement: "Documentation in manifest.json"
       status: compliant
       notes: "integration_type, iot_class, version, issue_tracker all specified"
-      evidence: "custom_components/wican/manifest.json"
+      evidence: "custom_components/can_do/manifest.json"
 
   assessment: passed
   notes: |
@@ -146,7 +146,7 @@ gold:
     - requirement: "Entities follow naming conventions"
       status: compliant
       notes: "All entities use translation_key, has_entity_name=True"
-      evidence: "custom_components/wican/attributes.py, entity.py"
+      evidence: "custom_components/can_do/attributes.py, entity.py"
       
     - requirement: "Device triggers/conditions/actions (if applicable)"
       status: not_applicable
@@ -154,8 +154,8 @@ gold:
       
     - requirement: "Config flow with discovery"
       status: compliant
-      notes: "Zeroconf discovery with _wican._tcp.local service"
-      evidence: "custom_components/wican/config_flow.py:async_step_zeroconf"
+      notes: "Zeroconf discovery with _CAN Do._tcp.local service"
+      evidence: "custom_components/can_do/config_flow.py:async_step_zeroconf"
       
     - requirement: "Entity availability tracking"
       status: compliant
@@ -179,7 +179,7 @@ gold:
     - requirement: "Entity icons follow MDI guidelines"
       status: compliant
       notes: "Uses standard MDI icons appropriate for sensor types"
-      evidence: "custom_components/wican/attributes.py entity descriptions"
+      evidence: "custom_components/can_do/attributes.py entity descriptions"
 
   assessment: compliant
   notes: |
@@ -245,17 +245,17 @@ technical_compliance:
   architecture:
     coordinator_pattern:
       status: compliant
-      implementation: "WiCANDataUpdateCoordinator with push-based updates"
+      implementation: "CAN DoDataUpdateCoordinator with push-based updates"
       notes: "Proper coordinator initialization and lifecycle management"
       
     runtime_data_pattern:
       status: compliant
-      implementation: "WiCANRuntimeData dataclass with type-safe access"
+      implementation: "CAN DoRuntimeData dataclass with type-safe access"
       notes: "Modern HA 2024+ pattern, eliminates hass.data dict lookups"
       
     entity_base_classes:
       status: compliant
-      implementation: "CoordinatorEntity[WiCANDataUpdateCoordinator]"
+      implementation: "CoordinatorEntity[CAN DoDataUpdateCoordinator]"
       notes: "All entities inherit from appropriate base classes"
       
     exception_handling:
@@ -437,7 +437,7 @@ integration_characteristics:
     
   discovery:
     method: "Zeroconf mDNS"
-    service_type: "_wican._tcp.local"
+    service_type: "_CAN Do._tcp.local"
     fallback: "_http._tcp.local (legacy firmware)"
     automatic: true
     confirmation: "required after onboarding"
@@ -523,8 +523,8 @@ maintenance:
     config_flow_minor_version: 1
     
   issue_tracking:
-    repository: "https://github.com/meatpiHQ/ha-wican"
-    issue_tracker: "https://github.com/meatpiHQ/ha-wican/issues"
+    repository: "https://github.com/SuperSuave/ha-can-do"
+    issue_tracker: "https://github.com/SuperSuave/ha-can-do/issues"
 
 # ============================================================================
 # CONCLUSION
@@ -535,7 +535,7 @@ conclusion:
   core_ready: true
   
   summary: |
-    WiCAN integration demonstrates excellent quality with modern architecture, 
+    CAN Do integration demonstrates excellent quality with modern architecture, 
     comprehensive type hints, proper error handling, and good test coverage.
     
     Key achievements:

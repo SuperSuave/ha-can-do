@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ha-wican"
+name = "ha-can-do"
 version = "1.0.0"
-description = "Home Assistant integration for WiCAN device"
+description = "Home Assistant integration for CAN Do vehicle automation"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
@@ -24,12 +24,12 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/meatpiHQ/ha-wican"
-Repository = "https://github.com/meatpiHQ/ha-wican"
-Issues = "https://github.com/meatpiHQ/ha-wican/issues"
+Homepage = "https://github.com/SuperSuave/ha-can-do"
+Repository = "https://github.com/SuperSuave/ha-can-do"
+Issues = "https://github.com/SuperSuave/ha-can-do/issues"
 
 [tool.setuptools]
-packages = ["custom_components.wican"]
+packages = ["custom_components.can_do"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -44,7 +44,7 @@ log_format = "%(asctime)s.%(msecs)03d %(levelname)-8s %(threadName)s %(name)s:%(
 log_date_format = "%Y-%m-%d %H:%M:%S"
 addopts = [
     "--strict-markers",
-    "--cov=custom_components.wican",
+    "--cov=custom_components.can_do",
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
@@ -59,7 +59,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["custom_components.wican"]
+source = ["custom_components.can_do"]
 omit = [
     "tests/*",
     "*/__pycache__/*",
