@@ -212,8 +212,14 @@ class WiCANCanConditionBinarySensorEntity(WiCANEntity, BinarySensorEntity, Resto
             self.async_write_ha_state()
             return
 
-        target_can_id = self._condition_def.get("can_id")
+        target_can_id = (
+            self._condition_def.get("state_can_id")
+            or self._condition_def.get("can_id")
+            or self._condition_def.get("action_can_id")
+        )
         match_payload = self._condition_def.get("match_payload")
+        if not match_payload and "options" in self._condition_def and isinstance(self._condition_def["options"], list) and len(self._condition_def["options"]) > 0:
+            match_payload = self._condition_def["options"][0].get("match_payload")
 
         if target_can_id and match_payload and isinstance(can_states, dict):
             matched = False

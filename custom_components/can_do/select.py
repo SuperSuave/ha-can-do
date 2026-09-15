@@ -217,6 +217,32 @@ class WiCANDriverSeatHeaterSelectEntity(WiCANEntity, SelectEntity, RestoreEntity
         actions = self._get_catalog_actions()
         action_def = next((a for a in actions if option.lower() in a.get("id", "").lower()), None)
         if not action_def:
+            comfort_def = next(
+                (a for a in actions if a.get("id") == "drivers_seat_comfort" or ("driver" in a.get("id", "") and "seat" in a.get("id", ""))),
+                None,
+            )
+            if comfort_def and "options" in comfort_def:
+                opt_key = option.lower()
+                matched_opt = next(
+                    (
+                        o for o in comfort_def["options"]
+                        if isinstance(o, dict) and (
+                            opt_key in o.get("label", "").lower()
+                            or (opt_key == "max" and "high" in o.get("label", "").lower())
+                            or (opt_key == "med" and "medium" in o.get("label", "").lower())
+                        )
+                    ),
+                    None,
+                )
+                if matched_opt:
+                    action_def = dict(comfort_def)
+                    p = matched_opt.get("payload")
+                    if p:
+                        action_def["steps"] = [{"payload": p, "repeat": 2}]
+                    elif "steps" in matched_opt:
+                        action_def["steps"] = matched_opt["steps"]
+
+        if not action_def:
             _LOGGER.warning("No seat heater action defined in catalog for this vehicle")
             return
 
