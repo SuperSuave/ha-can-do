@@ -25,10 +25,10 @@ async def test_climate_entity_creation_and_controls(
     assert state.state == HVACMode.OFF
 
     with patch(
-        "custom_components.can_do.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
+        "custom_components.wican.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
         return_value=True,
     ) as mock_execute, patch(
-        "custom_components.can_do.coordinator.WiCANDataUpdateCoordinator.async_trigger_precondition",
+        "custom_components.wican.coordinator.WiCANDataUpdateCoordinator.async_trigger_precondition",
         return_value=True,
     ) as mock_trigger:
         # Turn on

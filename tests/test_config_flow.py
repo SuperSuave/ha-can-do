@@ -15,7 +15,7 @@ except ImportError:
     from homeassistant.components.zeroconf import ZeroconfServiceInfo
 from homeassistant.const import CONF_NAME, CONF_WEBHOOK_ID
 
-from custom_components.can_do.const import DOMAIN
+from custom_components.wican.const import DOMAIN
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -224,7 +224,7 @@ async def test_zeroconf_during_onboarding(
             return_value=False,
         ),
         patch(
-            "custom_components.can_do._async_register_webhook_on_device",
+            "custom_components.wican._async_register_webhook_on_device",
             return_value=True,
         ),
     ):
@@ -467,7 +467,7 @@ async def test_zeroconf_confirm_webhook_url_exception(
 
     # Now confirm with mocked URL resolution that falls back to the current request
     with patch(
-        "custom_components.can_do.config_flow.resolve_webhook_url",
+        "custom_components.wican.config_flow.resolve_webhook_url",
         return_value="http://192.168.1.10:8123/api/webhook/test_webhook_id",
     ):
         result2 = await hass.config_entries.flow.async_configure(
@@ -536,7 +536,7 @@ async def test_format_http_url_empty_string(
     hass: HomeAssistant,
 ) -> None:
     """Test _format_http_url with empty string (line 219)."""
-    from custom_components.can_do.config_flow import _format_http_url
+    from custom_components.wican.config_flow import _format_http_url
     
     result = _format_http_url("   ", 80)
     assert result is None
@@ -546,7 +546,7 @@ async def test_format_http_url_with_existing_http(
     hass: HomeAssistant,
 ) -> None:
     """Test _format_http_url with existing http:// (line 223)."""
-    from custom_components.can_do.config_flow import _format_http_url
+    from custom_components.wican.config_flow import _format_http_url
     
     result = _format_http_url("http://example.com:8080", 80)
     assert result == "http://example.com:8080"
@@ -556,7 +556,7 @@ async def test_format_http_url_with_existing_https(
     hass: HomeAssistant,
 ) -> None:
     """Test _format_http_url with existing https:// (line 223)."""
-    from custom_components.can_do.config_flow import _format_http_url
+    from custom_components.wican.config_flow import _format_http_url
     
     result = _format_http_url("https://example.com", 443)
     assert result == "https://example.com"
@@ -566,7 +566,7 @@ async def test_format_http_url_with_port_none(
     hass: HomeAssistant,
 ) -> None:
     """Test _format_http_url with None port (yarl handles this gracefully)."""
-    from custom_components.can_do.config_flow import _format_http_url
+    from custom_components.wican.config_flow import _format_http_url
     
     # None port is valid for yarl URL.build
     result = _format_http_url("example.com", None)
@@ -577,7 +577,7 @@ async def test_string_ip_none(
     hass: HomeAssistant,
 ) -> None:
     """Test _string_ip with None input (line 243)."""
-    from custom_components.can_do.config_flow import _string_ip
+    from custom_components.wican.config_flow import _string_ip
     
     result = _string_ip(None)
     assert result is None

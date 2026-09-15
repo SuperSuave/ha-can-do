@@ -23,7 +23,7 @@ async def test_button_entity_press(
     assert state is not None
 
     with patch(
-        "custom_components.can_do.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
+        "custom_components.wican.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
         return_value=True,
     ) as mock_execute:
         await hass.services.async_call(

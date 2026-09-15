@@ -10,7 +10,7 @@ from homeassistant.const import CONF_WEBHOOK_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from custom_components.can_do.const import DOMAIN
+from custom_components.wican.const import DOMAIN
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -204,9 +204,9 @@ async def test_sensor_state_restoration(
     mock_config_entry.add_to_hass(hass)
     
     with patch(
-        "custom_components.can_do.async_get_clientsession"
+        "custom_components.wican.async_get_clientsession"
     ), patch(
-        "custom_components.can_do.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
+        "custom_components.wican.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
@@ -223,8 +223,8 @@ async def test_sensor_state_restoration(
 
 def test_get_sensor_attributes_with_none_values():
     """Test get_sensor_attributes when status values are None."""
-    from custom_components.can_do.attributes import get_sensor_attributes
-    from custom_components.can_do.sensor import WiCANSensorEntityDescription
+    from custom_components.wican.attributes import get_sensor_attributes
+    from custom_components.wican.sensor import WiCANSensorEntityDescription
     
     # Create entity description with extra_attributes
     entity_desc = WiCANSensorEntityDescription(
@@ -275,7 +275,7 @@ async def test_sensor_state_restoration_with_normalization(hass: HomeAssistant) 
     """Test sensor restores state with normalization."""
     from unittest.mock import patch
     from homeassistant.const import CONF_WEBHOOK_ID
-    from custom_components.can_do.const import DOMAIN
+    from custom_components.wican.const import DOMAIN
     from tests.conftest import MockConfigEntry
     
     entry = MockConfigEntry(
@@ -289,7 +289,7 @@ async def test_sensor_state_restoration_with_normalization(hass: HomeAssistant) 
     entry.add_to_hass(hass)
     
     # Setup should restore and normalize the value
-    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -307,7 +307,7 @@ async def test_can_states_and_catalog_sensors(
 ) -> None:
     """Test CAN states and catalog diagnostic sensors."""
     mock_config_entry.add_to_hass(hass)
-    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
         await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
 

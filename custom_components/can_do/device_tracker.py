@@ -59,7 +59,7 @@ class WiCANDeviceTrackerEntity(CoordinatorEntity, TrackerEntity, RestoreEntity):
 
     def __init__(self, config_entry: WiCANConfigEntry) -> None:
         """Initialize the device tracker entity."""
-        # Initialize CoordinatorEntity directly, not WiCANEntity (which requires entity_description)
+        # Initialize CoordinatorEntity directly, not CANDoEntity (which requires entity_description)
         CoordinatorEntity.__init__(self, config_entry.runtime_data.coordinator)
 
         self.config_entry = config_entry

@@ -41,31 +41,6 @@ def extract_catalog_entries(catalog_data: Any) -> list[dict[str, Any]]:
     return []
 
 
-def match_can_payload(raw_hex: str, pattern: str) -> bool:
-    """Check if raw hex string matches pattern (e.g. '* * 00 * * * * *' or '!12 *')."""
-    if not raw_hex or not pattern:
-        return False
-
-    raw_clean = raw_hex.replace(" ", "").upper()
-    bytes_raw = [raw_clean[i:i + 2] for i in range(0, len(raw_clean), 2)]
-    pattern_parts = pattern.strip().split()
-
-    if len(pattern_parts) > len(bytes_raw):
-        return False
-
-    for p, r in zip(pattern_parts, bytes_raw):
-        p = p.upper()
-        if p == "*":
-            continue
-        if p.startswith("!"):
-            if r == p[1:]:
-                return False
-        elif p != r:
-            return False
-
-    return True
-
-
 def clean_mdns_host(host_or_url: str | None) -> str | None:
     """Remove trailing dot from mDNS host or URL string."""
     if not host_or_url:

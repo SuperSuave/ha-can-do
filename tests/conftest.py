@@ -13,7 +13,7 @@ from homeassistant.setup import async_setup_component
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.can_do.const import DOMAIN, CONF_POST_INTERVAL
+from custom_components.wican.const import DOMAIN, CONF_POST_INTERVAL
 
 
 # Automatically enable the custom component for all tests
@@ -98,7 +98,7 @@ async def init_integration(
 
     with (
         patch(
-            "custom_components.can_do._async_register_webhook_on_device",
+            "custom_components.wican._async_register_webhook_on_device",
             new_callable=AsyncMock,
             return_value=True,
         ),

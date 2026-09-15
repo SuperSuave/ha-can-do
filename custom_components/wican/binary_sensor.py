@@ -15,7 +15,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .attributes import BINARY_SENSOR_DESCRIPTIONS, WiCANBinarySensorEntityDescription, get_sensor_attributes
 from .const import DOMAIN
 from .entity import CANDoEntity
-from .helpers import extract_catalog_entries, match_can_payload
+from .helpers import extract_catalog_entries
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -132,6 +132,31 @@ class WiCANBinarySensorEntity(CANDoEntity, BinarySensorEntity, RestoreEntity):
         await super().async_added_to_hass()
 
 
+def match_can_payload(raw_hex: str, pattern: str) -> bool:
+    """Check if raw hex string matches pattern (e.g. '* * 00 * * * * *' or '!12 *')."""
+    if not raw_hex or not pattern:
+        return False
+
+    raw_clean = raw_hex.replace(" ", "").upper()
+    bytes_raw = [raw_clean[i:i + 2] for i in range(0, len(raw_clean), 2)]
+    pattern_parts = pattern.strip().split()
+
+    if len(pattern_parts) > len(bytes_raw):
+        return False
+
+    for p, r in zip(pattern_parts, bytes_raw):
+        p = p.upper()
+        if p == "*":
+            continue
+        if p.startswith("!"):
+            if r == p[1:]:
+                return False
+        elif p != r:
+            return False
+
+    return True
+
+
 class WiCANCanConditionBinarySensorEntity(CANDoEntity, BinarySensorEntity, RestoreEntity):
     @callback
     def _async_handle_event(self, webhook_id: str, data: dict[str, str]) -> None:
@@ -187,14 +212,8 @@ class WiCANCanConditionBinarySensorEntity(CANDoEntity, BinarySensorEntity, Resto
             self.async_write_ha_state()
             return
 
-        target_can_id = (
-            self._condition_def.get("state_can_id")
-            or self._condition_def.get("can_id")
-            or self._condition_def.get("action_can_id")
-        )
+        target_can_id = self._condition_def.get("can_id")
         match_payload = self._condition_def.get("match_payload")
-        if not match_payload and "options" in self._condition_def and isinstance(self._condition_def["options"], list) and len(self._condition_def["options"]) > 0:
-            match_payload = self._condition_def["options"][0].get("match_payload")
 
         if target_can_id and match_payload and isinstance(can_states, dict):
             matched = False

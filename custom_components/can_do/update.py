@@ -29,7 +29,7 @@ from .const import (
     OTA_ENDPOINT,
     OTA_FORM_FIELD,
 )
-from .entity import WiCANEntity
+from .entity import CANDoEntity
 from .exceptions import (
     FirmwareDownloadError,
     FirmwareUploadError,
@@ -56,7 +56,7 @@ async def async_setup_entry(
     async_add_entities([WiCANUpdateEntity(entry)])
 
 
-class WiCANUpdateEntity(WiCANEntity, UpdateEntity):
+class WiCANUpdateEntity(CANDoEntity, UpdateEntity):
     """Representation of WiCAN firmware update entity."""
 
     __slots__ = ("_github_coordinator", "_update_in_progress")
@@ -84,7 +84,7 @@ class WiCANUpdateEntity(WiCANEntity, UpdateEntity):
         """Handle WiCAN webhook event.
 
         Update entity doesn't need webhook events - version info comes from coordinator.
-        This is required by WiCANEntity base class.
+        This is required by CANDoEntity base class.
         """
         # No action needed - version info updated via coordinator
 

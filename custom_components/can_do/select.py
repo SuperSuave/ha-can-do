@@ -12,7 +12,7 @@ from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN
-from .entity import WiCANEntity
+from .entity import CANDoEntity
 from .helpers import (
     extract_catalog_entries,
     format_friendly_name,
@@ -117,7 +117,7 @@ async def async_setup_entry(
     config_entry.async_on_unload(unsub)
 
 
-class WiCANSelectEntity(WiCANEntity, SelectEntity, RestoreEntity):
+class WiCANSelectEntity(CANDoEntity, SelectEntity, RestoreEntity):
     """Dynamic select entity driven by CAN-Do catalog options."""
 
     _attr_has_entity_name = True
