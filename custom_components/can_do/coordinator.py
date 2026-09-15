@@ -255,49 +255,73 @@ class WiCANDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Get value for a specific sensor."""
         return self._data.get(sensor_key)
 
-    async def async_execute_action(self, action_payload: dict[str, Any]) -> bool:
-        """Send an action execution request to the WiCAN device (/test_can_do_action)."""
-        base_url = self._get_device_base_url()
-        if not base_url:
-            _LOGGER.warning("Cannot execute action: base_url not resolved")
+    async def async_publish_mqtt_cmd(self, payload: dict[str, Any]) -> bool:
+        """Publish a command to CAN Do device via Home Assistant MQTT integration."""
+        device_id = (
+            self.config_entry.data.get("device_id")
+            or self._data.get("status", {}).get("device_id")
+            or self._data.get("device_id")
+        )
+        if not device_id:
+            _LOGGER.warning("Cannot publish MQTT command: device_id unknown")
+            return False
+
+        if "mqtt" not in self.hass.config.components:
+            _LOGGER.warning("MQTT integration not loaded in Home Assistant; cannot send fallback command")
             return False
 
         try:
-            url = str(URL(base_url).with_path("/test_can_do_action"))
-            session = async_get_clientsession(self.hass)
-            async with asyncio.timeout(10):
-                response = await session.post(url, json=action_payload, ssl=False)
-                if response.status in (200, 201, 204):
-                    _LOGGER.info("Successfully executed CAN action on WiCAN device")
-                    return True
-                _LOGGER.warning("CAN action failed with status %s", response.status)
-        except Exception as err:
-            _LOGGER.exception("Failed to execute CAN action on WiCAN device: %s", err)
+            import json
+            from homeassistant.components import mqtt
 
-        return False
+            topic = f"can_do/{device_id}/cmd"
+            await mqtt.async_publish(self.hass, topic, json.dumps(payload), qos=1)
+            _LOGGER.info("Published command to CAN Do device via MQTT topic: %s", topic)
+            return True
+        except Exception as err:
+            _LOGGER.exception("Failed to publish command via MQTT topic can_do/%s/cmd: %s", device_id, err)
+            return False
+
+    async def async_execute_action(self, action_payload: dict[str, Any]) -> bool:
+        """Send an action execution request to the CAN Do device via HTTP/HTTPS or MQTT."""
+        base_url = self._get_device_base_url()
+        if base_url:
+            try:
+                url = str(URL(base_url).with_path("/test_can_do_action"))
+                session = async_get_clientsession(self.hass)
+                async with asyncio.timeout(5):
+                    response = await session.post(url, json=action_payload, ssl=False)
+                    if response.status in (200, 201, 204):
+                        _LOGGER.info("Successfully executed CAN action on CAN Do device via HTTP/HTTPS")
+                        return True
+                    _LOGGER.warning("HTTP CAN action failed with status %s, attempting MQTT fallback", response.status)
+            except Exception as err:
+                _LOGGER.debug("HTTP CAN action to %s failed: %s, attempting MQTT fallback", base_url, err)
+
+        # Fallback to MQTT if HTTP/HTTPS is unavailable or failed
+        return await self.async_publish_mqtt_cmd(action_payload)
 
     async def async_trigger_precondition(self, state: bool | None = None, target_temp: float | None = None) -> bool:
-        """Send a precondition toggle command to the WiCAN device (/precondition_toggle)."""
+        """Send a precondition toggle command to the CAN Do device via HTTP/HTTPS or MQTT."""
+        payload: dict[str, Any] = {"cmd": "precondition_toggle"}
+        if state is not None:
+            payload["state"] = "on" if state else "off"
+        if target_temp is not None:
+            payload["target_temp"] = target_temp
+
         base_url = self._get_device_base_url()
-        if not base_url:
-            _LOGGER.warning("Cannot toggle precondition: base_url not resolved")
-            return False
+        if base_url:
+            try:
+                url = str(URL(base_url).with_path("/precondition_toggle"))
+                session = async_get_clientsession(self.hass)
+                async with asyncio.timeout(5):
+                    response = await session.post(url, json=payload, ssl=False)
+                    if response.status in (200, 201, 204):
+                        _LOGGER.info("Successfully toggled precondition on CAN Do device via HTTP/HTTPS")
+                        return True
+                    _LOGGER.warning("HTTP precondition toggle failed with status %s, attempting MQTT fallback", response.status)
+            except Exception as err:
+                _LOGGER.debug("HTTP precondition toggle to %s failed: %s, attempting MQTT fallback", base_url, err)
 
-        try:
-            url = str(URL(base_url).with_path("/precondition_toggle"))
-            session = async_get_clientsession(self.hass)
-            payload = {}
-            if state is not None:
-                payload["state"] = "on" if state else "off"
-            if target_temp is not None:
-                payload["target_temp"] = target_temp
-            async with asyncio.timeout(10):
-                response = await session.post(url, json=payload, ssl=False)
-                if response.status in (200, 201, 204):
-                    _LOGGER.info("Successfully toggled precondition on WiCAN device")
-                    return True
-                _LOGGER.warning("Precondition toggle failed with status %s", response.status)
-        except Exception as err:
-            _LOGGER.exception("Failed to toggle precondition on WiCAN device: %s", err)
-
-        return False
+        # Fallback to MQTT if HTTP/HTTPS is unavailable or failed
+        return await self.async_publish_mqtt_cmd(payload)
