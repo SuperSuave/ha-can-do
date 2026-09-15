@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError
 from homeassistant.util import dt as dt_util
 
-from custom_components.wican.coordinator import WiCANDataUpdateCoordinator
+from custom_components.can_do.coordinator import WiCANDataUpdateCoordinator
 
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -334,7 +334,7 @@ async def test_coordinator_numeric_string_conversion_edge_cases(
     """Test coordinator handles numeric string edge cases."""
     from unittest.mock import patch
     from homeassistant.const import CONF_WEBHOOK_ID
-    from custom_components.wican.const import DOMAIN
+    from custom_components.can_do.const import DOMAIN
     from tests.conftest import MockConfigEntry
     
     entry = MockConfigEntry(
@@ -347,7 +347,7 @@ async def test_coordinator_numeric_string_conversion_edge_cases(
     )
     entry.add_to_hass(hass)
     
-    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     

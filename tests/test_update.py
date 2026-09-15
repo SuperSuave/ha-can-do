@@ -16,7 +16,7 @@ from homeassistant.exceptions import HomeAssistantError
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.wican.const import DOMAIN
+from custom_components.can_do.const import DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 def mock_params_update():
     """Mock async_update_params_from_github to prevent blocking I/O in tests."""
     with patch(
-        "custom_components.wican.param_loader.async_update_params_from_github",
+        "custom_components.can_do.param_loader.async_update_params_from_github",
         new_callable=AsyncMock,
         return_value=False,
     ):
@@ -141,11 +141,11 @@ async def test_update_entity_setup(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_session,
     ):
         # Mock GitHub API response
@@ -180,11 +180,11 @@ async def test_installed_version_from_coordinator(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_session,
     ):
         # Mock GitHub API
@@ -227,11 +227,11 @@ async def test_latest_version_from_github(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_session,
     ):
         # Mock GitHub API - use correct pattern for 'await session.get()' not 'async with'
@@ -260,14 +260,14 @@ async def test_firmware_filename_standard(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API
@@ -321,14 +321,14 @@ async def test_firmware_filename_pro(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API with PRO release
@@ -381,14 +381,14 @@ async def test_firmware_filename_usb(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API with standard release (has both OBD and USB assets)
@@ -441,14 +441,14 @@ async def test_firmware_download_404_error(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API
@@ -489,14 +489,14 @@ async def test_firmware_upload_connection_error(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API
@@ -544,14 +544,14 @@ async def test_firmware_update_with_specific_version(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API
@@ -644,11 +644,11 @@ async def test_update_entity_unavailable_without_version(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_session,
     ):
         # Mock GitHub API
@@ -679,14 +679,14 @@ async def test_progress_reporting_during_update(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
         patch("asyncio.sleep", return_value=None),  # Speed up test
     ):

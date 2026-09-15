@@ -10,7 +10,7 @@ from homeassistant.const import CONF_WEBHOOK_ID, STATE_ON, STATE_OFF
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from custom_components.wican.const import DOMAIN
+from custom_components.can_do.const import DOMAIN
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -149,9 +149,9 @@ async def test_binary_sensor_state_restoration(
     mock_config_entry.add_to_hass(hass)
     
     with patch(
-        "custom_components.wican.async_get_clientsession"
+        "custom_components.can_do.async_get_clientsession"
     ), patch(
-        "custom_components.wican.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
+        "custom_components.can_do.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
@@ -168,7 +168,7 @@ async def test_binary_sensor_state_restoration(
 
 def test_is_true_status_with_non_string():
     """Test is_true_status with non-string values."""
-    from custom_components.wican.binary_sensor import is_true_status
+    from custom_components.can_do.binary_sensor import is_true_status
     
     # Test with integers
     assert is_true_status(1) is True
@@ -212,7 +212,7 @@ async def test_binary_sensor_none_checks(hass: HomeAssistant, hass_client) -> No
     """Test binary sensor handles None data gracefully."""
     from unittest.mock import patch
     from homeassistant.const import CONF_WEBHOOK_ID
-    from custom_components.wican.const import DOMAIN
+    from custom_components.can_do.const import DOMAIN
     from tests.conftest import MockConfigEntry
     
     entry = MockConfigEntry(
@@ -225,7 +225,7 @@ async def test_binary_sensor_none_checks(hass: HomeAssistant, hass_client) -> No
     )
     entry.add_to_hass(hass)
     
-    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -253,7 +253,7 @@ async def test_binary_sensor_none_checks(hass: HomeAssistant, hass_client) -> No
 
 def test_match_can_payload_logic() -> None:
     """Test match_can_payload matching function."""
-    from custom_components.wican.binary_sensor import match_can_payload
+    from custom_components.can_do.binary_sensor import match_can_payload
 
     # Exact byte & wildcard
     assert match_can_payload("0002002000000000", "* * 00 * * * * *") is True
@@ -269,10 +269,10 @@ async def test_can_condition_binary_sensor_entity(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test CAN condition binary sensor updates state from matching CAN payload."""
-    from custom_components.wican.binary_sensor import WiCANCanConditionBinarySensorEntity
+    from custom_components.can_do.binary_sensor import WiCANCanConditionBinarySensorEntity
 
     mock_config_entry.add_to_hass(hass)
-    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
         await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
 

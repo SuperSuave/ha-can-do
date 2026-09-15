@@ -11,8 +11,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_WEBHOOK_ID
 from homeassistant.helpers.network import NoURLAvailableError
 
-from custom_components.wican import _async_register_webhook_on_device
-from custom_components.wican.const import DOMAIN
+from custom_components.can_do import _async_register_webhook_on_device
+from custom_components.can_do.const import DOMAIN
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -26,7 +26,7 @@ async def test_setup_entry_success(
     mock_config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican._async_register_webhook_on_device",
+        "custom_components.can_do._async_register_webhook_on_device",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
@@ -46,7 +46,7 @@ async def test_setup_entry_webhook_registration_fails(
     mock_config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican._async_register_webhook_on_device",
+        "custom_components.can_do._async_register_webhook_on_device",
         return_value=False,
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
@@ -192,7 +192,7 @@ async def test_webhook_registration_no_url_available(
     config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican._async_register_webhook_on_device",
+        "custom_components.can_do._async_register_webhook_on_device",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
@@ -206,11 +206,11 @@ async def test_webhook_registration_no_url_available(
 
     with (
         patch(
-            "custom_components.wican.helpers.get_url",
+            "custom_components.can_do.helpers.get_url",
             side_effect=NoURLAvailableError,
         ),
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=session,
         ),
     ):
@@ -240,7 +240,7 @@ async def test_webhook_registration_non_pro_uses_single_local_http_url(
     config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican._async_register_webhook_on_device",
+        "custom_components.can_do._async_register_webhook_on_device",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
@@ -254,11 +254,11 @@ async def test_webhook_registration_non_pro_uses_single_local_http_url(
 
     with (
         patch(
-            "custom_components.wican.helpers.get_url",
+            "custom_components.can_do.helpers.get_url",
             return_value="http://192.168.1.10:8123",
         ),
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=session,
         ),
     ):
@@ -292,7 +292,7 @@ async def test_webhook_registration_pro_uses_local_and_external_urls(
     config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican._async_register_webhook_on_device",
+        "custom_components.can_do._async_register_webhook_on_device",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
@@ -306,14 +306,14 @@ async def test_webhook_registration_pro_uses_local_and_external_urls(
 
     with (
         patch(
-            "custom_components.wican.helpers.get_url",
+            "custom_components.can_do.helpers.get_url",
             side_effect=[
                 "http://192.168.1.10:8123",
                 "https://example.ui.nabu.casa",
             ],
         ),
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=session,
         ),
     ):
@@ -351,7 +351,7 @@ async def test_webhook_registration_pro_pre_449_uses_single_local_url(
     config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican._async_register_webhook_on_device",
+        "custom_components.can_do._async_register_webhook_on_device",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
@@ -365,11 +365,11 @@ async def test_webhook_registration_pro_pre_449_uses_single_local_url(
 
     with (
         patch(
-            "custom_components.wican.helpers.get_url",
+            "custom_components.can_do.helpers.get_url",
             return_value="http://192.168.1.10:8123",
         ),
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=session,
         ),
     ):
@@ -402,7 +402,7 @@ async def test_webhook_registration_https_local_falls_back_to_http_stored_url(
     config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican._async_register_webhook_on_device",
+        "custom_components.can_do._async_register_webhook_on_device",
         return_value=True,
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
@@ -416,11 +416,11 @@ async def test_webhook_registration_https_local_falls_back_to_http_stored_url(
 
     with (
         patch(
-            "custom_components.wican.helpers.get_url",
+            "custom_components.can_do.helpers.get_url",
             return_value="https://internal.example.com",
         ),
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=session,
         ),
     ):

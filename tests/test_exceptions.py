@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from custom_components.wican.exceptions import (
+from custom_components.can_do.exceptions import (
     WiCANConnectionError,
     WiCANDataError,
     WiCANDeviceNotFoundError,

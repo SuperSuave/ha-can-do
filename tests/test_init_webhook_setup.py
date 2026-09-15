@@ -10,7 +10,7 @@ import time
 from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_WEBHOOK_ID
 
-from custom_components.wican.const import DOMAIN, CONF_POST_INTERVAL, DEFAULT_POST_INTERVAL
+from custom_components.can_do.const import DOMAIN, CONF_POST_INTERVAL, DEFAULT_POST_INTERVAL
 from tests.conftest import MockConfigEntry
 
 
@@ -28,7 +28,7 @@ async def test_setup_entry_generates_missing_webhook_id(hass: HomeAssistant) -> 
     assert CONF_WEBHOOK_ID not in entry.data
     
     # Setup should generate webhook_id
-    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
         result = await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -67,7 +67,7 @@ async def test_setup_entry_uses_custom_post_interval(hass: HomeAssistant) -> Non
     )
     entry.add_to_hass(hass)
     
-    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
         result = await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -84,7 +84,7 @@ async def test_setup_entry_default_post_interval(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
     
-    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
         result = await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -107,7 +107,7 @@ async def test_webhook_registration_normalizes_mdns_scheme(hass: HomeAssistant) 
     mock_response.status = 200
     mock_session.post.return_value.__aenter__.return_value = mock_response
     
-    with patch("custom_components.wican.async_get_clientsession", return_value=mock_session):
+    with patch("custom_components.can_do.async_get_clientsession", return_value=mock_session):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -130,7 +130,7 @@ async def test_webhook_registration_normalizes_host_scheme(hass: HomeAssistant) 
     mock_response.status = 200
     mock_session.post.return_value.__aenter__.return_value = mock_response
     
-    with patch("custom_components.wican.async_get_clientsession", return_value=mock_session):
+    with patch("custom_components.can_do.async_get_clientsession", return_value=mock_session):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -189,7 +189,7 @@ async def test_webhook_registration_skips_cache_for_mdns(hass: HomeAssistant) ->
     mock_response.status = 200
     mock_session.post.return_value.__aenter__.return_value = mock_response
     
-    with patch("custom_components.wican.async_get_clientsession", return_value=mock_session):
+    with patch("custom_components.can_do.async_get_clientsession", return_value=mock_session):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     
@@ -208,7 +208,7 @@ async def test_webhook_registration_with_ip_host(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     
     # Mock successful webhook registration
-    with patch("custom_components.wican._async_register_webhook_on_device", return_value=True):
+    with patch("custom_components.can_do._async_register_webhook_on_device", return_value=True):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
     

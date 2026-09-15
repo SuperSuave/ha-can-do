@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from custom_components.wican.param_loader import (
+from custom_components.can_do.param_loader import (
     get_param_unit,
     get_param_device_class,
     get_param_icon,
@@ -364,7 +364,7 @@ class TestGitHubParamsUpdate:
     async def test_fetch_params_from_github_success(self) -> None:
         """Test successful fetch from GitHub."""
         from unittest.mock import AsyncMock, MagicMock
-        from custom_components.wican.param_loader import async_fetch_params_from_github
+        from custom_components.can_do.param_loader import async_fetch_params_from_github
 
         # Mock response
         mock_response = AsyncMock()
@@ -387,7 +387,7 @@ class TestGitHubParamsUpdate:
     async def test_fetch_params_from_github_http_error(self) -> None:
         """Test handling of HTTP error from GitHub."""
         from unittest.mock import AsyncMock, MagicMock
-        from custom_components.wican.param_loader import async_fetch_params_from_github
+        from custom_components.can_do.param_loader import async_fetch_params_from_github
 
         # Mock 404 response
         mock_response = AsyncMock()
@@ -406,7 +406,7 @@ class TestGitHubParamsUpdate:
     async def test_fetch_params_from_github_invalid_json(self) -> None:
         """Test handling of invalid JSON from GitHub."""
         from unittest.mock import AsyncMock, MagicMock
-        from custom_components.wican.param_loader import async_fetch_params_from_github
+        from custom_components.can_do.param_loader import async_fetch_params_from_github
 
         # Mock response with invalid JSON
         mock_response = AsyncMock()
@@ -427,7 +427,7 @@ class TestGitHubParamsUpdate:
         """Test handling of timeout from GitHub."""
         import asyncio
         from unittest.mock import MagicMock
-        from custom_components.wican.param_loader import async_fetch_params_from_github
+        from custom_components.can_do.param_loader import async_fetch_params_from_github
 
         # Mock session that raises timeout
         mock_session = MagicMock()
@@ -440,7 +440,7 @@ class TestGitHubParamsUpdate:
 
     def test_compute_hash_consistency(self) -> None:
         """Test that hash computation is consistent."""
-        from custom_components.wican.param_loader import _compute_hash
+        from custom_components.can_do.param_loader import _compute_hash
 
         data = b'{"test": "data"}'
         hash1 = _compute_hash(data)
@@ -451,7 +451,7 @@ class TestGitHubParamsUpdate:
 
     def test_compute_hash_different_data(self) -> None:
         """Test that different data produces different hashes."""
-        from custom_components.wican.param_loader import _compute_hash
+        from custom_components.can_do.param_loader import _compute_hash
 
         hash1 = _compute_hash(b'{"test": "data1"}')
         hash2 = _compute_hash(b'{"test": "data2"}')
@@ -460,7 +460,7 @@ class TestGitHubParamsUpdate:
 
     def test_reload_params(self) -> None:
         """Test reload_params reloads from disk."""
-        from custom_components.wican.param_loader import reload_params, get_all_params
+        from custom_components.can_do.param_loader import reload_params, get_all_params
 
         # Just verify it doesn't crash and returns valid data
         reload_params()

@@ -27,7 +27,7 @@ async def test_select_entity_options(
     assert "Electric Blue" in state.attributes["options"]
 
     with patch(
-        "custom_components.wican.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
+        "custom_components.can_do.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
         return_value=True,
     ) as mock_execute:
         await hass.services.async_call(

@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_WEBHOOK_ID
 from homeassistant.helpers import aiohttp_client
 
-from custom_components.wican.const import CONF_POST_INTERVAL, DOMAIN
+from custom_components.can_do.const import CONF_POST_INTERVAL, DOMAIN
 
 from tests.conftest import MockConfigEntry
 
@@ -52,7 +52,7 @@ async def test_webhook_registration_success_first_try(
     mock_session.post.return_value = create_mock_response(200, "OK")
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         # Setup entry (triggers webhook registration)
@@ -95,11 +95,11 @@ async def test_webhook_registration_pro_includes_external_https_url(
 
     with (
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=mock_session,
         ),
         patch(
-            "custom_components.wican.resolve_device_webhook_urls",
+            "custom_components.can_do.resolve_device_webhook_urls",
             return_value=[
                 "http://homeassistant.local:8123/api/webhook/test_webhook_id",
                 "https://example.ui.nabu.casa/api/webhook/test_webhook_id",
@@ -141,11 +141,11 @@ async def test_webhook_registration_pro_falls_back_to_external_https_only(
 
     with (
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=mock_session,
         ),
         patch(
-            "custom_components.wican.resolve_device_webhook_urls",
+            "custom_components.can_do.resolve_device_webhook_urls",
             return_value=[
                 "https://example.ui.nabu.casa/api/webhook/test_webhook_id",
             ],
@@ -175,7 +175,7 @@ async def test_webhook_registration_retry_on_connection_error(
     ]
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
@@ -197,7 +197,7 @@ async def test_webhook_registration_fails_after_max_retries(
     mock_session.post.side_effect = ClientError("Connection refused")
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         # Setup should still succeed (webhook registration failure is non-fatal)
@@ -220,7 +220,7 @@ async def test_webhook_registration_timeout_handling(
     mock_session.post.side_effect = asyncio.TimeoutError()
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         # Setup should still succeed
@@ -276,7 +276,7 @@ async def test_webhook_registration_uses_cached_ip(
     mock_session.post.return_value = mock_context
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
@@ -292,7 +292,7 @@ async def test_webhook_registration_uses_cached_ip(
         mock_session.post.reset_mock()
         
         # Trigger another registration (e.g., via reload)
-        from custom_components.wican import _async_register_webhook_on_device
+        from custom_components.can_do import _async_register_webhook_on_device
         
         await _async_register_webhook_on_device(hass, entry)
         await hass.async_block_till_done()
@@ -321,7 +321,7 @@ async def test_webhook_registration_cache_expiration(
     mock_session.post.return_value.__aenter__.return_value = mock_response
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
@@ -337,7 +337,7 @@ async def test_webhook_registration_cache_expiration(
         mock_session.post.reset_mock()
         
         # Trigger another registration
-        from custom_components.wican import _async_register_webhook_on_device
+        from custom_components.can_do import _async_register_webhook_on_device
         
         await _async_register_webhook_on_device(hass, entry)
         await hass.async_block_till_done()
@@ -365,7 +365,7 @@ async def test_webhook_registration_missing_host_and_mdns(
     entry.add_to_hass(hass)
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         # Setup should still succeed (registration failure is non-fatal)
@@ -399,7 +399,7 @@ async def test_webhook_registration_normalizes_http_scheme(
     mock_session.post.return_value = mock_context
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
@@ -433,7 +433,7 @@ async def test_webhook_registration_server_disconnected(
     ]
     
     with patch(
-        "custom_components.wican.async_get_clientsession",
+        "custom_components.can_do.async_get_clientsession",
         return_value=mock_session,
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
@@ -462,11 +462,11 @@ async def test_webhook_registration_invalid_url_generation(
     # Mock get_url to raise exception
     with (
         patch(
-            "custom_components.wican.async_get_clientsession",
+            "custom_components.can_do.async_get_clientsession",
             return_value=mock_session,
         ),
         patch(
-            "custom_components.wican.resolve_device_webhook_urls",
+            "custom_components.can_do.resolve_device_webhook_urls",
             side_effect=Exception("Invalid URL"),
         ),
     ):

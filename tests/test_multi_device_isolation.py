@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from custom_components.wican.const import DOMAIN
+from custom_components.can_do.const import DOMAIN
 
 from tests.conftest import MockConfigEntry
 
@@ -26,15 +26,15 @@ async def _setup_entry(hass: HomeAssistant, entry: MockConfigEntry) -> None:
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican._schedule_webhook_registration",
+            "custom_components.can_do._schedule_webhook_registration",
             return_value=None,
         ),
         patch(
-            "custom_components.wican.github_releases.GitHubReleasesCoordinator.async_config_entry_first_refresh",
+            "custom_components.can_do.github_releases.GitHubReleasesCoordinator.async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
     ):

@@ -26,7 +26,7 @@ async def test_lock_entity_creation_and_controls(
     assert state is not None
 
     with patch(
-        "custom_components.wican.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
+        "custom_components.can_do.coordinator.WiCANDataUpdateCoordinator.async_execute_action",
         return_value=True,
     ) as mock_execute:
         # Unlock

@@ -10,8 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.network import NoURLAvailableError
 
-from custom_components.wican.exceptions import WiCANConnectionError, WiCANError
-from custom_components.wican.helpers import resolve_device_webhook_urls, wican_exception_handler
+from custom_components.can_do.exceptions import WiCANConnectionError, WiCANError
+from custom_components.can_do.helpers import resolve_device_webhook_urls, wican_exception_handler
 
 
 class MockEntity:
@@ -161,11 +161,11 @@ def test_resolve_device_webhook_urls_prefers_local_http_and_external_https(
     """Test devices prefer local HTTP and append external HTTPS when available."""
     with (
         patch(
-            "custom_components.wican.helpers.resolve_local_webhook_url",
+            "custom_components.can_do.helpers.resolve_local_webhook_url",
             return_value="http://homeassistant.local:8123/api/webhook/test",
         ),
         patch(
-            "custom_components.wican.helpers.resolve_external_https_webhook_url",
+            "custom_components.can_do.helpers.resolve_external_https_webhook_url",
             return_value="https://example.ui.nabu.casa/api/webhook/test",
         ),
     ):
@@ -187,11 +187,11 @@ def test_resolve_device_webhook_urls_falls_back_to_external_https(
     """Test Pro devices can fall back to external HTTPS when local HTTP is unavailable."""
     with (
         patch(
-            "custom_components.wican.helpers.resolve_local_webhook_url",
+            "custom_components.can_do.helpers.resolve_local_webhook_url",
             side_effect=NoURLAvailableError,
         ),
         patch(
-            "custom_components.wican.helpers.resolve_external_https_webhook_url",
+            "custom_components.can_do.helpers.resolve_external_https_webhook_url",
             return_value="https://example.ui.nabu.casa/api/webhook/test",
         ),
     ):
@@ -209,7 +209,7 @@ def test_resolve_device_webhook_urls_requires_local_http_without_fallback(
 ) -> None:
     """Test non-Pro devices still require a local HTTP webhook URL."""
     with patch(
-        "custom_components.wican.helpers.resolve_local_webhook_url",
+        "custom_components.can_do.helpers.resolve_local_webhook_url",
         side_effect=NoURLAvailableError,
     ):
         with pytest.raises(NoURLAvailableError):

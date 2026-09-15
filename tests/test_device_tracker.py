@@ -12,7 +12,7 @@ from homeassistant.helpers import entity_registry as er
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.wican.const import DOMAIN
+from custom_components.can_do.const import DOMAIN
 
 
 @pytest.fixture
@@ -293,7 +293,7 @@ async def test_device_tracker_gps_restoration_value_errors(
 ) -> None:
     """Test device tracker GPS restoration handles ValueError/TypeError."""
     from unittest.mock import Mock
-    from custom_components.wican.device_tracker import WiCANDeviceTrackerEntity
+    from custom_components.can_do.device_tracker import WiCANDeviceTrackerEntity
     
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)

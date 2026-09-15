@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from aiohttp.web import Request
 
-from custom_components.wican import (
+from custom_components.can_do import (
     _ensure_http_scheme,
     _http_url_from_host,
     _build_webhook_endpoint,
@@ -126,7 +126,7 @@ def test_build_webhook_endpoint_invalid_url():
 def test_build_webhook_endpoint_no_scheme_invalid():
     """Test _build_webhook_endpoint with invalid URL after adding scheme."""
     # Test the second ValueError catch when adding scheme fails
-    with patch("custom_components.wican._ensure_http_scheme", side_effect=ValueError):
+    with patch("custom_components.can_do._ensure_http_scheme", side_effect=ValueError):
         result = _build_webhook_endpoint("no-scheme-host")
         assert result is None
 

@@ -9,7 +9,7 @@ import pytest
 from homeassistant.const import CONF_WEBHOOK_ID
 from homeassistant.core import HomeAssistant
 
-from custom_components.wican.diagnostics import async_get_config_entry_diagnostics
+from custom_components.can_do.diagnostics import async_get_config_entry_diagnostics
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 

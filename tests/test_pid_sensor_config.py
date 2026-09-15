@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from custom_components.wican.const import DOMAIN
+from custom_components.can_do.const import DOMAIN
 
 from tests.conftest import MockConfigEntry
 
@@ -510,9 +510,9 @@ async def test_pid_sensor_invalid_unit_normalization(
     mock_config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican.async_get_clientsession"
+        "custom_components.can_do.async_get_clientsession"
     ), patch(
-        "custom_components.wican.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
+        "custom_components.can_do.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
@@ -548,9 +548,9 @@ async def test_pid_sensor_device_class_normalization_rpm_speed_mismatch(
     mock_config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican.async_get_clientsession"
+        "custom_components.can_do.async_get_clientsession"
     ), patch(
-        "custom_components.wican.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
+        "custom_components.can_do.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
@@ -583,9 +583,9 @@ async def test_pid_sensor_invalid_device_class_string(
     mock_config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican.async_get_clientsession"
+        "custom_components.can_do.async_get_clientsession"
     ), patch(
-        "custom_components.wican.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
+        "custom_components.can_do.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
@@ -994,9 +994,9 @@ async def test_pid_sensor_invalid_device_class_unit_combo_filtered(
     mock_config_entry.add_to_hass(hass)
 
     with patch(
-        "custom_components.wican.async_get_clientsession"
+        "custom_components.can_do.async_get_clientsession"
     ), patch(
-        "custom_components.wican.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
+        "custom_components.can_do.WiCANDataUpdateCoordinator.async_config_entry_first_refresh"
     ):
         assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()

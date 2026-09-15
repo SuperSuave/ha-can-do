@@ -9,7 +9,7 @@ from aiohttp import ClientError, ClientResponseError
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from custom_components.wican.github_releases import GitHubReleasesCoordinator
+from custom_components.can_do.github_releases import GitHubReleasesCoordinator
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ async def test_fetch_latest_stable_release(
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response
         mock_response = AsyncMock()
@@ -128,7 +128,7 @@ async def test_fetch_filters_prereleases(
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response
         mock_response = AsyncMock()
@@ -158,7 +158,7 @@ async def test_fetch_no_stable_releases(hass: HomeAssistant) -> None:
     ]
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response with only prereleases
         mock_response = AsyncMock()
@@ -179,7 +179,7 @@ async def test_fetch_github_api_timeout(hass: HomeAssistant) -> None:
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock timeout
         mock_session.return_value.get.side_effect = TimeoutError("Request timed out")
@@ -196,7 +196,7 @@ async def test_fetch_github_api_client_error(hass: HomeAssistant) -> None:
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock client error
         mock_get = AsyncMock(side_effect=ClientError("Network error"))
@@ -214,7 +214,7 @@ async def test_fetch_github_api_invalid_json(hass: HomeAssistant) -> None:
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock invalid JSON response
         mock_response = AsyncMock()
@@ -236,7 +236,7 @@ async def test_fetch_github_api_rate_limit(hass: HomeAssistant) -> None:
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock rate limit (403 Forbidden)
         mock_response = AsyncMock()
@@ -261,7 +261,7 @@ async def test_fetch_github_api_404(hass: HomeAssistant) -> None:
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock 404 Not Found
         mock_response = AsyncMock()
@@ -286,7 +286,7 @@ async def test_github_api_url_format(hass: HomeAssistant) -> None:
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response
         mock_response = AsyncMock()
@@ -324,7 +324,7 @@ async def test_coordinator_caches_data(
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response
         mock_response = AsyncMock()
@@ -353,7 +353,7 @@ async def test_release_data_structure(
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response
         mock_response = AsyncMock()
@@ -378,7 +378,7 @@ async def test_empty_releases_list(hass: HomeAssistant) -> None:
     coordinator = GitHubReleasesCoordinator(hass)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response with empty list
         mock_response = AsyncMock()
@@ -401,7 +401,7 @@ async def test_fetch_pro_releases_only(
     coordinator = GitHubReleasesCoordinator(hass, is_pro=True)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response with mixed releases
         mock_response = AsyncMock()
@@ -426,7 +426,7 @@ async def test_fetch_standard_releases_only(
     coordinator = GitHubReleasesCoordinator(hass, is_pro=False)
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response with mixed releases
         mock_response = AsyncMock()
@@ -458,7 +458,7 @@ async def test_fetch_no_matching_device_type(hass: HomeAssistant) -> None:
     ]
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response with standard releases only
         mock_response = AsyncMock()
@@ -493,7 +493,7 @@ async def test_pro_detection_case_insensitive(hass: HomeAssistant) -> None:
     ]
 
     with patch(
-        "custom_components.wican.github_releases.async_get_clientsession"
+        "custom_components.can_do.github_releases.async_get_clientsession"
     ) as mock_session:
         # Mock GitHub API response
         mock_response = AsyncMock()

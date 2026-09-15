@@ -1,6 +1,6 @@
 """Constants for the WiCAN integration."""
 
-DOMAIN = "wican"
+DOMAIN = "can_do"
 
 # Configuration
 CONF_POST_INTERVAL = "post_interval"

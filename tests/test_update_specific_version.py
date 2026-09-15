@@ -14,7 +14,7 @@ from homeassistant.const import ATTR_ENTITY_ID
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.wican.const import DOMAIN
+from custom_components.can_do.const import DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 def mock_params_update():
     """Mock async_update_params_from_github to prevent blocking I/O in tests."""
     with patch(
-        "custom_components.wican.param_loader.async_update_params_from_github",
+        "custom_components.can_do.param_loader.async_update_params_from_github",
         new_callable=AsyncMock,
         return_value=False,
     ):
@@ -105,14 +105,14 @@ async def test_install_specific_version(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API response with latest release (4.45p)
@@ -204,14 +204,14 @@ async def test_install_latest_version_uses_cache(
 
     with (
         patch(
-            "custom_components.wican._async_register_webhook_on_device",
+            "custom_components.can_do._async_register_webhook_on_device",
             return_value=True,
         ),
         patch(
-            "custom_components.wican.github_releases.async_get_clientsession",
+            "custom_components.can_do.github_releases.async_get_clientsession",
         ) as mock_gh_session,
         patch(
-            "custom_components.wican.update.async_get_clientsession",
+            "custom_components.can_do.update.async_get_clientsession",
         ) as mock_update_session,
     ):
         # Mock GitHub API response with latest release (4.45p)
