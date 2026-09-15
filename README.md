@@ -1,74 +1,109 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
+﻿<p align="center">
+  <img src="logo.svg" alt="CAN Do Logo" width="180">
+</p>
 
-# About
-This is the official HomeAssistant integration for [WiCAN by meatpi](https://github.com/meatpiHQ/wican-fw).
+<h1 align="center">CAN Do for Home Assistant</h1>
 
-This integration is available via HACS, and not part of the default HomeAssistant integrations. 
+<p align="center">
+  <b>The bidirectional vehicle automation and telematics platform for Home Assistant.</b><br>
+  Powered by the <a href="https://github.com/SuperSuave/can-do-message-catalog">CAN Do Message Catalog</a> and CAN Do firmware.
+</p>
 
-# Documentation
-This repository contains only documentation for the HomeAssistant integration of WiCAN.
+<p align="center">
+  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge" alt="HACS Custom"></a>
+  <a href="https://github.com/SuperSuave/ha-can-do/releases"><img src="https://img.shields.io/github/v/release/SuperSuave/ha-can-do?style=for-the-badge&color=0284c7" alt="Release"></a>
+  <a href="https://github.com/SuperSuave/ha-can-do/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
+</p>
 
-The documentation for the devices (e.g. WiCAN OBD or WiCAN USB) can be found in the offical [WiCAN Device Documentation](https://meatpihq.github.io/wican-fw/).
-There you will also find configuration instructions for the device itself (e.g. Firmware Updates / Retrieving data for your specific car model) 
+---
 
-# Integration Status
-It is very much in an Alpha stage at the moment, and under constant changes, hoping to get it in a Beta state soon where we could recommend starting to use it.
+## Overview
 
-# Installation
+**CAN Do for Home Assistant** transforms your WiCAN and ESP32 CAN adapters from passive OBD loggers into a **full-featured, bidirectional vehicle control plane**. 
 
-## Manual Installation
-1. Add the integration repository to HACS and install the WiCAN integration.
-   - Follow the official guide to [add a custom repository](https://www.hacs.xyz/docs/faq/custom_repositories/).
-     - Repository URL: 'https://github.com/jay-oswald/ha-wican'
-     - Type: 'Integration'
-   - Follow the official guide to [download a repository](https://www.hacs.xyz/docs/use/repositories/dashboard/#downloading-a-repository)
-2. Restart home assistant
-3. Continue with Configuration steps below
+Control climate preconditioning, heated seats, door locks, charge limits, and power tailgates directly from your Home Assistant dashboards, voice assistants, and automations—both at home on local Wi-Fi and remotely anywhere in the world.
 
-## Installation via My Home Assistant
-1. Add the integration through this link: 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jay-oswald&repository=ha-wican&category=integration)
-2. Restart home assistant
-3. Continue with Configuration steps below
+---
+
+## Key Features
+
+* 🚗 **Bidirectional Vehicle Controls:** Over 58 vehicle actions supported out of the box via the [CAN Do Message Catalog](https://github.com/SuperSuave/can-do-message-catalog).
+* 🌡️ **Cabin Preconditioning:** One-tap remote preconditioning with target temperature configuration and automatic vehicle keep-alive states.
+* ⚡ **Dual-Transport Architecture:**
+  * **Direct Local / HTTPS:** Sub-second command dispatch over local HTTP or secure HTTPS tunnel when reachable.
+  * **Zero-NAT Remote MQTT Fallback:** When your vehicle is away from home behind cellular or hotspot NAT, commands automatically route through Home Assistant's MQTT broker (`can_do/<device_id>/cmd`).
+* 📊 **Live Telematics & State Tracking:** Real-time CAN bus telemetry, high-voltage battery SOC, 12V auxiliary battery health, door/window states, and odometer tracking delivered via secure HTTPS webhooks.
+* 🧩 **Rich Multi-Domain Entity Generation:**
+  * `climate`: Cabin HVAC, preconditioning controls, and target temperatures.
+  * `select`: Multi-level driver & passenger heated/cooled seat comfort, DC charge limits, and drive modes.
+  * `button`: Horn, hazard flashes, preconditioning toggles, and trunk release.
+  * `switch`: Defrosters, steering wheel heaters, and utility modes.
+  * `lock`: Door lock and unlock controls.
+  * `cover`: Windows, sunshades, and motorized charge port doors.
+  * `sensor` & `binary_sensor`: Battery voltage, speed, tire pressure, and condition triggers.
+  * `event`: Steering wheel buttons and vehicle CAN Do automation triggers.
+
+---
+
+## Prerequisites
+
+1. **Hardware & Firmware:** WiCAN OBD adapter or supported ESP32 CAN device running **CAN Do firmware** ([wicant-i-automate](https://github.com/SuperSuave/wicant-i-automate)).
+2. **Home Assistant:** Version `2024.1.0` or newer.
+3. **(Optional for Remote Control):** Home Assistant **MQTT Integration** (e.g. Mosquitto Broker) with external access configured (MQTTS/port 8883 or VPN/Cloudflare).
+
+---
+
+## Installation
+
+### Via HACS (Recommended)
+
+1. Open **HACS** in Home Assistant.
+2. Click the three dots in the top right corner and select **Custom repositories**.
+3. Enter the repository details:
+   * **Repository:** `https://github.com/SuperSuave/ha-can-do`
+   * **Type:** `Integration`
+4. Click **Add**, then find and install **CAN Do**.
+5. Restart Home Assistant.
+
+---
 
 ## Configuration
-- In Home Assistant, go to 'Settings > Devices & Services > Integrations'.
-- Click on 'Add Integration', search for WiCAN, and select it.
-- Enter the mDNS/hostname (wican_xxxxxxxxxxxx.local) or IP-Address of WiCAN device to connect the WiCAN device. If you have multiple WiCAN devices repeat these steps for the other devices.
-- After setup, use the WiCAN integration's *Configure* button to adjust the **Post Interval** (in seconds) that controls how often the device pushes data to Home Assistant. The default is 15 seconds.
 
-### Webhook URL behavior
-- WiCAN devices use a single local HTTP webhook URL.
-- WiCAN-PRO devices on firmware `v4.49+` can receive multiple webhook URLs.
-- When available, Home Assistant sends WiCAN-PRO devices a local HTTP webhook URL first and an external HTTPS webhook URL second, such as Nabu Casa or a reverse proxy.
-- If no local HTTP Home Assistant URL is available, WiCAN-PRO `v4.49+` can fall back to a single external HTTPS webhook URL.
+### 1. Adding the Integration
+1. In Home Assistant, navigate to **Settings → Devices & Services → Integrations**.
+2. Click **Add Integration**, search for **CAN Do**, and select it.
+3. Enter the hostname (e.g., `can_do_xxxx.local`) or local IP address of your device.
+4. Set your preferred telemetry **Post Interval** (default is 15 seconds).
 
-Result: After completing installation and configuration, WiCAN will be connected to Home Assistant, and you will be able to monitor the available car parameters directly from the Home Assistant interface.
+### 2. Device Webhook Pairing
+When the integration finishes initial setup, it automatically registers its primary (and external HTTPS / Nabu Casa fallback) webhook URLs directly onto the CAN Do device.
+* You can verify the registered webhook in your device's web dashboard under **Settings → Automation → Webhooks**.
 
-# Troubleshooting
-### Not possible to add a device via IP-Address or mDNS/hostname
-Potential root cause: The WiCAN device might not be accessible or the protocol is not set to "AutoPID".
+### 3. Remote Control via MQTT (Away from Home)
+To enable instant remote vehicle control outside your home network:
+1. In the CAN Do device web interface, go to **Settings → MQTT**.
+2. Enter your Home Assistant MQTT broker host, port, and credentials.
+3. Enable MQTT.
+4. That's it! When away from home, `ha-can-do` automatically routes commands via `can_do/<device_id>/cmd`.
 
-To fix the issue:
-1. Please make sure that the WiCAN device is accesssible from your web browser. If it is not available, ensure that it is not in sleep mode [WiCAN Docs: Sleep Mode](https://meatpihq.github.io/wican-fw/config/sleep-mode)
-2. Please make sure that the WiCAN device uses protocol "AutoPID" via the WiCAN device settings.
+---
 
-### The device is added, but all entites show status "Unavailable"
-Potential root cause: HomeAssistant has been restarted or the WiCAN integration reloaded while the WiCAN device was not available (e.g. car away, sleep mode).
+## Troubleshooting
 
-To fix the issue, make sure, the WiCAN device is available (e.g. by turning on ignition of car) and then reload the integration.
+### Device unreachable during setup
+* Verify your device is connected to the same Wi-Fi network and powered via the vehicle OBD port or USB bench supply.
+* Check that mDNS resolution is functioning on your local network or configure via direct IP.
 
-### Device entities are not properly updated anymore after changing the car configuration on the WiCAN device
-Potential root cause: The WiCAN integration creates entities based on the car configuration in HomeAssistant. By changing the car configuration, some PIDs might get added and others removed.
+### Commands work at home but fail away from home
+* Ensure your Home Assistant MQTT integration is configured and running.
+* Verify the CAN Do device displays "MQTT Online" in its dashboard status.
 
-To ensure, that all entities in HomeAssistant are up to date after changing the car configuration, you can either
-* delete inidividual entities, that are not available in the new car configuration OR
-* delete the WiCAN device in HomeAssistant and afterwards add it again with the new car configuration.
+---
 
-### The Unit of measure of a device entity cannot be changed in HomeAssistant
-Background: The WiCAN HomeAssistant integration creates entities based on the WiCAN car configuration.
+## Contributing & Catalog
+New vehicle models and CAN commands are actively maintained in the [CAN Do Message Catalog](https://github.com/SuperSuave/can-do-message-catalog). Contributions and captures are welcome!
 
-To change the unit of measure of an entity in HomeAssistant, it needs to be updated in the WiCAN device itself:
-* Open the WiCAN device in a web-browser (e.g. via link "VISIT" from the WiCAN device page in HomeAssistant)
-* Go to tab "Automate", find the respective PID, update the "unit" and press "Submit changes". Further details about the car configuration are part of the official WiCAN device documentation: [Automate](https://meatpihq.github.io/wican-fw/config/automate/usage)
-* After changing the unit on the WiCAN device, go to HomeAssistant and reload the WiCAN integration. This will automatically update the unit of measure for the respective entity.
+---
+
+## License
+MIT License. See [LICENSE](LICENSE) for details.
